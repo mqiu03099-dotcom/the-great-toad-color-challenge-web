@@ -123,51 +123,8 @@ button:focus-visible {
   transform: rotate(7deg);
 }
 
-.qr-mount {
-  position: relative;
-  padding: 0.65rem;
-  border-radius: 0.9rem;
-  background: #fffbeb;
-  box-shadow: 0 0.8rem 1.8rem rgb(21 90 69 / 16%);
-}
-
 .qr-mount img {
   border-radius: 0.62rem;
-}
-
-.qr-corner {
-  position: absolute;
-  width: 1.5rem;
-  height: 1.5rem;
-  border-color: var(--forest-leaf);
-}
-
-.qr-corner--tl {
-  top: 0.28rem;
-  left: 0.28rem;
-  border-top: 3px solid;
-  border-left: 3px solid;
-}
-
-.qr-corner--tr {
-  top: 0.28rem;
-  right: 0.28rem;
-  border-top: 3px solid;
-  border-right: 3px solid;
-}
-
-.qr-corner--bl {
-  bottom: 0.28rem;
-  left: 0.28rem;
-  border-bottom: 3px solid;
-  border-left: 3px solid;
-}
-
-.qr-corner--br {
-  right: 0.28rem;
-  bottom: 0.28rem;
-  border-right: 3px solid;
-  border-bottom: 3px solid;
 }
 
 .link-ticket {
