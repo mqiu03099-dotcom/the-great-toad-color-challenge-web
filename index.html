@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#155a45">
+  <meta
+    name="description"
+    content="奶蛙颜色大挑战：接受奶蛙的森林邀请，找出颜色不一样的那一格。"
+  >
+  <link rel="icon" type="image/png" href="./images/milk-frog-leg.png">
+  <title>奶蛙颜色大挑战</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            forest: {
+              cream: "#f7f1d4",
+              deep: "#155a45",
+              gold: "#dce9a8",
+              ink: "#173f35",
+              leaf: "#4b9b5f",
+              sky: "#73d0d2",
+            },
+          },
+        },
+      },
+    };
+  </script>
+  <link rel="stylesheet" href="./css/styles.css">
+</head>
+<body class="min-h-screen overflow-x-hidden bg-forest-deep text-forest-ink antialiased">
+  <div class="page-shell relative min-h-screen overflow-hidden">
+    <img
+      class="forest-background fixed inset-0 -z-30 h-full w-full object-cover"
+      src="./images/forest-sky-bg.jpg"
+      alt=""
+      aria-hidden="true"
+    >
+    <div class="forest-overlay fixed inset-0 -z-20" aria-hidden="true"></div>
+    <div class="sun-wash fixed -right-24 -top-20 -z-10 h-96 w-96 rounded-full" aria-hidden="true"></div>
+
+    <main class="mx-auto flex min-h-screen w-full max-w-6xl items-start px-3 py-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:px-8 sm:py-8 lg:px-10">
+      <div class="responsive-layout relative mx-auto grid w-full items-center">
+        <div class="page-mascot" aria-hidden="true">
+          <img
+            src="./images/milk-frog-welcome.jpeg"
+            alt=""
+            width="640"
+            height="640"
+          >
+        </div>
+
+        <section class="invitation-paper relative mx-auto min-w-0 w-full max-w-md" aria-labelledby="entry-title">
+          <div class="paper-pin paper-pin--left" aria-hidden="true"></div>
+          <div class="paper-pin paper-pin--right" aria-hidden="true"></div>
+
+          <div class="flex items-start justify-between gap-4">
+            <div>
+              <p class="text-xs font-black tracking-[0.24em] text-forest-leaf">FOREST INVITATION · 01</p>
+              <h2 id="entry-title" class="mt-2 whitespace-nowrap text-[clamp(1.5rem,7.5vw,2.25rem)] font-black leading-tight tracking-[-0.035em] text-forest-deep">
+                奶蛙颜色大挑战
+              </h2>
+            </div>
+            <div class="mini-stamp">限时<br>试炼</div>
+          </div>
+
+          <p class="mt-3 text-sm font-semibold leading-6 text-forest-ink/70">
+            微信扫码进入，或者复制下方小程序短链接。
+          </p>
+
+          <div class="qr-mount mx-auto mt-4 w-fit sm:mt-5">
+            <span class="qr-corner qr-corner--tl" aria-hidden="true"></span>
+            <span class="qr-corner qr-corner--tr" aria-hidden="true"></span>
+            <span class="qr-corner qr-corner--bl" aria-hidden="true"></span>
+            <span class="qr-corner qr-corner--br" aria-hidden="true"></span>
+            <img
+              class="block h-auto w-44 sm:w-56"
+              src="./images/wclogo.jpg"
+              alt="奶蛙颜色大挑战微信小程序二维码"
+              width="1280"
+              height="1280"
+            >
+          </div>
+
+          <div class="scan-caption mt-4 flex items-center justify-center gap-2 text-xs font-black text-forest-deep sm:text-sm">
+            <span class="h-1.5 w-1.5 rounded-full bg-forest-leaf" aria-hidden="true"></span>
+            长按识别或使用微信扫一扫
+            <span class="h-1.5 w-1.5 rounded-full bg-forest-leaf" aria-hidden="true"></span>
+          </div>
+
+          <div class="link-ticket mt-4 flex items-center gap-3 px-4 py-3 sm:mt-5">
+            <div class="min-w-0 flex-1">
+              <div class="text-[0.68rem] font-black tracking-[0.16em] text-forest-leaf">微信小程序短链接</div>
+              <div id="copy-link-value" class="mt-1 truncate text-sm font-black text-forest-deep">#小程序://颜色挑战/9du8XhHxHxXSCqK</div>
+            </div>
+            <button
+              id="copy-link-icon-button"
+              data-copy-link
+              class="copy-icon-button shrink-0 text-forest-leaf"
+              type="button"
+              aria-label="复制小程序短链接"
+            >
+              <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M8 8H6.8A2.8 2.8 0 0 0 4 10.8v6.4A2.8 2.8 0 0 0 6.8 20h6.4a2.8 2.8 0 0 0 2.8-2.8V16M10.8 4h6.4A2.8 2.8 0 0 1 20 6.8v6.4a2.8 2.8 0 0 1-2.8 2.8h-6.4A2.8 2.8 0 0 1 8 13.2V6.8A2.8 2.8 0 0 1 10.8 4Z" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+              </svg>
+            </button>
+          </div>
+
+          <button
+            id="copy-link-button"
+            data-copy-link
+            class="primary-button mt-4 flex min-h-14 w-full items-center justify-center px-5 py-3 text-lg font-black text-forest-cream"
+            type="button"
+          >
+            复制链接，赴约挑战
+          </button>
+
+          <p id="copy-status" class="mt-4 min-h-6 text-center text-sm font-bold text-forest-deep" aria-live="polite">
+            复制后，请在微信中打开
+          </p>
+
+          <div class="paper-signature mt-1 text-right text-xs font-bold tracking-[0.12em] text-forest-leaf/80 sm:mt-2">
+            —— 奶蛙森林试炼委员会
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <script src="./js/config.js"></script>
+  <script src="./js/app.js"></script>
+</body>
+</html>
