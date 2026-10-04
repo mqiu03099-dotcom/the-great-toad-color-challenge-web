@@ -1,9 +1,22 @@
 const copyButtons = document.querySelectorAll("[data-copy-link]");
+const copyNameButton = document.getElementById("copy-name-button");
 const copyLinkValue = document.getElementById("copy-link-value");
-const copyStatus = document.getElementById("copy-status");
+const copyToast = document.getElementById("copy-toast");
+const miniProgramName = document.getElementById("entry-title").textContent.trim();
 const shortLink = window.MINI_PROGRAM_SHORT_LINK;
+let toastTimer;
 
 copyLinkValue.textContent = shortLink;
+
+const showToast = (message, type = "success") => {
+  clearTimeout(toastTimer);
+  copyToast.textContent = message;
+  copyToast.classList.toggle("copy-toast--error", type === "error");
+  copyToast.classList.add("is-visible");
+  toastTimer = setTimeout(() => {
+    copyToast.classList.remove("is-visible");
+  }, 1800);
+};
 
 const copyShortLink = async () => {
   copyButtons.forEach((button) => {
@@ -12,9 +25,9 @@ const copyShortLink = async () => {
 
   try {
     await navigator.clipboard.writeText(shortLink);
-    copyStatus.textContent = "已复制，打开微信粘贴即可进入";
+    showToast("链接已复制");
   } catch (error) {
-    copyStatus.textContent = "复制失败，请长按上方链接手动复制";
+    showToast("复制失败，请手动复制", "error");
   } finally {
     copyButtons.forEach((button) => {
       button.disabled = false;
@@ -24,4 +37,17 @@ const copyShortLink = async () => {
 
 copyButtons.forEach((button) => {
   button.addEventListener("click", copyShortLink);
+});
+
+copyNameButton.addEventListener("click", async () => {
+  copyNameButton.disabled = true;
+
+  try {
+    await navigator.clipboard.writeText(miniProgramName);
+    showToast("名称已复制");
+  } catch (error) {
+    showToast("复制失败，请手动复制", "error");
+  } finally {
+    copyNameButton.disabled = false;
+  }
 });

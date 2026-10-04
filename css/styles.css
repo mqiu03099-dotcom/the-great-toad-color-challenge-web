@@ -19,7 +19,49 @@ body {
   isolation: isolate;
 }
 
+.page-scroll {
+  scrollbar-width: none;
+}
+
+.page-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.copy-toast {
+  position: fixed;
+  top: calc(1rem + env(safe-area-inset-top));
+  left: 50%;
+  z-index: 50;
+  max-width: calc(100vw - 2rem);
+  padding: 0.65rem 1rem;
+  border: 1px solid rgb(247 241 212 / 38%);
+  border-radius: 999px;
+  background: var(--forest-deep);
+  box-shadow: 0 0.75rem 2rem rgb(2 41 31 / 32%);
+  color: var(--forest-cream);
+  font-size: 0.875rem;
+  font-weight: 800;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, -0.5rem);
+  transition: opacity 180ms ease, transform 180ms var(--ease-out-quint);
+}
+
+.copy-toast.is-visible {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+.copy-toast.copy-toast--error {
+  background: #a33a36;
+}
+
 button:focus-visible {
+  outline: 4px solid var(--forest-gold);
+  outline-offset: 4px;
+}
+
+.secondary-button:focus-visible {
   outline: 4px solid var(--forest-gold);
   outline-offset: 4px;
 }
@@ -125,6 +167,28 @@ button:focus-visible {
 
 .qr-mount img {
   border-radius: 0.62rem;
+}
+
+.secondary-button {
+  border: 1px solid rgb(21 90 69 / 45%);
+  border-radius: 0.72rem;
+  background: rgb(255 249 220 / 52%);
+  cursor: pointer;
+  text-decoration: none;
+  transition: color 150ms ease, background 150ms ease, opacity 150ms ease;
+}
+
+.secondary-button:hover {
+  background: rgb(75 155 95 / 14%);
+}
+
+.secondary-button:active {
+  background: rgb(75 155 95 / 24%);
+}
+
+.secondary-button:disabled {
+  cursor: wait;
+  opacity: 0.56;
 }
 
 .link-ticket {

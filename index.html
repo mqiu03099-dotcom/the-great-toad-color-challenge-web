@@ -69,8 +69,9 @@
     >
     <div class="forest-overlay fixed inset-0 -z-20" aria-hidden="true"></div>
     <div class="sun-wash fixed -right-24 -top-20 -z-10 h-96 w-96 rounded-full" aria-hidden="true"></div>
+    <div id="copy-toast" class="copy-toast" role="status" aria-live="polite" aria-atomic="true"></div>
 
-    <main class="mx-auto flex h-full min-h-0 w-full max-w-6xl items-start overflow-y-auto overscroll-y-contain px-3 py-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:px-8 sm:py-8 lg:px-10">
+    <main class="page-scroll mx-auto flex h-full min-h-0 w-full max-w-6xl items-start overflow-y-auto overscroll-y-contain px-3 py-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:px-8 sm:py-8 lg:px-10">
       <div class="responsive-layout relative mx-auto grid w-full items-center">
         <div class="page-mascot" aria-hidden="true">
           <img
@@ -115,6 +116,30 @@
             <span class="h-1.5 w-1.5 rounded-full bg-forest-leaf" aria-hidden="true"></span>
           </div>
 
+          <div class="mt-4 flex gap-3">
+            <button
+              id="copy-name-button"
+              class="secondary-button flex min-h-11 flex-1 items-center justify-center gap-2 px-3 py-2 text-sm font-black text-forest-deep"
+              type="button"
+            >
+              <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M8 8H6.8A2.8 2.8 0 0 0 4 10.8v6.4A2.8 2.8 0 0 0 6.8 20h6.4a2.8 2.8 0 0 0 2.8-2.8V16M10.8 4h6.4A2.8 2.8 0 0 1 20 6.8v6.4a2.8 2.8 0 0 1-2.8 2.8h-6.4A2.8 2.8 0 0 1 8 13.2V6.8A2.8 2.8 0 0 1 10.8 4Z" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+              </svg>
+              复制名称
+            </button>
+            <a
+              id="save-qr-button"
+              class="secondary-button flex min-h-11 flex-1 items-center justify-center gap-2 px-3 py-2 text-sm font-black text-forest-deep"
+              href="./images/wclogo.jpg"
+              download="奶蛙颜色大挑战-小程序二维码.jpg"
+            >
+              <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M12 4v10m0 0 4-4m-4 4-4-4M5 17v1.2A1.8 1.8 0 0 0 6.8 20h10.4a1.8 1.8 0 0 0 1.8-1.8V17" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              保存二维码
+            </a>
+          </div>
+
           <div class="link-ticket mt-4 flex items-center gap-3 px-4 py-3 sm:mt-5">
             <div class="min-w-0 flex-1">
               <div class="text-[0.68rem] font-black tracking-[0.16em] text-forest-leaf">微信小程序短链接</div>
@@ -142,11 +167,7 @@
             复制链接，赴约挑战
           </button>
 
-          <p id="copy-status" class="mt-4 min-h-6 text-center text-sm font-bold text-forest-deep" aria-live="polite">
-            复制后，请在微信中打开
-          </p>
-
-          <div class="paper-signature mt-1 text-right text-xs font-bold tracking-[0.12em] text-forest-leaf/80 sm:mt-2">
+          <div class="paper-signature mt-4 text-right text-xs font-bold tracking-[0.12em] text-forest-leaf/80">
             —— 奶蛙森林试炼委员会
           </div>
         </section>
