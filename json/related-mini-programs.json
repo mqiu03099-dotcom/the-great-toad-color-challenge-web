@@ -30,6 +30,15 @@
     "name": "奶蛙大笑",
     "path": "pages/index/index",
     "rotation": 180
+  },
+
+  {
+    "appId": "wx394b878feb6c7786",
+    "description": "更多奶蛙趣味内容",
+    "image": "/assets/images/milk-frog-leg.png",
+    "name": "奶蛙大笑",
+    "path": "pages/index/index",
+    "rotation": 180
   }
 ]
 
