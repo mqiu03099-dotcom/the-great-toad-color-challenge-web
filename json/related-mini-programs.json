@@ -1,9 +1,9 @@
 [
   {
-    "appId": "wxbe2c2af9a1d495b2",
+    "appId": "wxf0a486039814dc3f",
     "image": "/assets/images/head.png",
-    "name": "奶蛙贪吃蛇",
-    "description": "开发中",
+    "description": "审核中",
+    "name": "奶蛙贪吃蛙",
     "path": "pages/index/index",
     "rotation": 0
   },
@@ -16,12 +16,12 @@
     "rotation": 0
   },
   {
-    "appId": "wxf0a486039814dc3f",
-    "description": "发现更多趣味内容",
+    "appId": "wxbe2c2af9a1d495b2",
     "image": "/assets/images/milk-frog-leg.png",
-    "name": "蚊子-赛博永生",
+    "name": "奶蛙魔笑",
+    "description": "发现更多趣味内容",
     "path": "pages/index/index",
-    "rotation": 90
+    "rotation": 0
   },
   {
     "appId": "wx394b878feb6c7786",
