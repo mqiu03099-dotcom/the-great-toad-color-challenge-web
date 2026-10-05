@@ -1,9 +1,16 @@
 [
   {
     "appId": "wxbe2c2af9a1d495b2",
-    "description": "更多奶蛙趣味内容",
-    "image": "/assets/images/milk-frog-leg.png",
+    "image": "/assets/images/head.png",
     "name": "奶蛙贪吃蛇",
+    "path": "pages/index/index",
+    "rotation": 0
+  },
+  {
+    "appId": "wxc9d52685e4990f9b",
+    "image": "/assets/images/milk-frog-leg.png",
+    "description": "挑战绝对色感与观察力",
+    "name": "奶蛙颜色大挑战",
     "path": "pages/index/index",
     "rotation": 0
   },
@@ -22,13 +29,7 @@
     "name": "奶蛙大笑",
     "path": "pages/index/index",
     "rotation": 180
-  },
-  {
-    "appId": "wxc9d52685e4990f9b",
-    "description": "挑战绝对色感与观察力",
-    "image": "/assets/images/head.png",
-    "name": "奶蛙颜色大挑战",
-    "path": "pages/index/index",
-    "rotation": 0
   }
 ]
+
+
