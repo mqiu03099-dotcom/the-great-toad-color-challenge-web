@@ -24,47 +24,11 @@
     "rotation": 180
   },
   {
-    "appId": "wx394b878feb6c7786",
-    "description": "更多奶蛙趣味内容",
-    "image": "/assets/images/milk-frog-leg.png",
-    "name": "奶蛙大笑",
+    "appId": "wxc9d52685e4990f9b",
+    "description": "挑战绝对色感与观察力",
+    "image": "/assets/images/head.png",
+    "name": "奶蛙颜色大挑战",
     "path": "pages/index/index",
-    "rotation": 180
-  },
-  {
-    "appId": "wx394b878feb6c7786",
-    "description": "更多奶蛙趣味内容",
-    "image": "/assets/images/milk-frog-leg.png",
-    "name": "奶蛙大笑",
-    "path": "pages/index/index",
-    "rotation": 180
-  },
-  {
-    "appId": "wx394b878feb6c7786",
-    "description": "更多奶蛙趣味内容",
-    "image": "/assets/images/milk-frog-leg.png",
-    "name": "奶蛙大笑",
-    "path": "pages/index/index",
-    "rotation": 180
-  },
-  {
-    "appId": "wx394b878feb6c7786",
-    "description": "更多奶蛙趣味内容",
-    "image": "/assets/images/milk-frog-leg.png",
-    "name": "奶蛙大笑",
-    "path": "pages/index/index",
-    "rotation": 180
-  },
-  {
-    "appId": "wx394b878feb6c7786",
-    "description": "更多奶蛙趣味内容",
-    "image": "/assets/images/milk-frog-leg.png",
-    "name": "奶蛙大笑",
-    "path": "pages/index/index",
-    "rotation": 180
+    "rotation": 0
   }
 ]
-
-
-
-
