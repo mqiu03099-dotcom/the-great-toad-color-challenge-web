@@ -3,6 +3,7 @@
     "appId": "wxbe2c2af9a1d495b2",
     "image": "/assets/images/head.png",
     "name": "奶蛙贪吃蛇",
+    "description": "发现更多趣味内容",
     "path": "pages/index/index",
     "rotation": 0
   },
@@ -31,5 +32,4 @@
     "rotation": 180
   }
 ]
-
 
