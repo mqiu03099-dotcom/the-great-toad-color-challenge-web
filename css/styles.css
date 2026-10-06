@@ -82,10 +82,7 @@ button:focus-visible {
 }
 
 .responsive-layout {
-  --mascot-space: clamp(7rem, 25vw, 8rem);
-
   max-width: 72rem;
-  padding-top: var(--mascot-space);
   animation: invitation-arrive 720ms 120ms var(--ease-out-quint) both;
 }
 
