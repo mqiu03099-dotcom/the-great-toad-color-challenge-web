@@ -9,7 +9,7 @@
   },
   {
     "appId": "wxc9d52685e4990f9b",
-    "image": "/assets/images/milk-frog-leg.png",
+    "image": "https://milkyfrog.toolsbox.vip/images/naiwacolor.png",
     "description": "挑战你的绝对色感",
     "name": "奶蛙颜色大挑战",
     "path": "pages/index/index",
