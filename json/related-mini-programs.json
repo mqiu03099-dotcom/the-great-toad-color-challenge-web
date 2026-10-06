@@ -2,7 +2,7 @@
   {
     "appId": "wxf0a486039814dc3f",
     "image": "/assets/images/head.png",
-    "description": "审核中",
+    "description": "快来品尝肥美奶蛙",
     "name": "奶蛙贪吃蛙",
     "path": "pages/index/index",
     "rotation": 0
@@ -10,7 +10,7 @@
   {
     "appId": "wxc9d52685e4990f9b",
     "image": "/assets/images/milk-frog-leg.png",
-    "description": "挑战绝对色感",
+    "description": "挑战你的绝对色感",
     "name": "奶蛙颜色大挑战",
     "path": "pages/index/index",
     "rotation": 0
