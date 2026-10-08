@@ -188,6 +188,18 @@ button:focus-visible {
   opacity: 0.56;
 }
 
+.secondary-button--3d {
+  border-width: 2px;
+  border-radius: 0.85rem;
+  box-shadow: 0 0.48rem 0 rgb(21 90 69 / 45%);
+  transition: transform 150ms ease, box-shadow 150ms ease, opacity 150ms ease, background 150ms ease;
+}
+
+.secondary-button--3d:active {
+  box-shadow: 0 0.14rem 0 rgb(21 90 69 / 45%);
+  transform: translateY(0.34rem);
+}
+
 .link-ticket {
   border: 1px dashed rgb(21 90 69 / 55%);
   border-radius: 0.8rem;
