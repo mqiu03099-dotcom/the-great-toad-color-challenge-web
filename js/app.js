@@ -1,12 +1,19 @@
 const copyButtons = document.querySelectorAll("[data-copy-link]");
+const linkButtons = document.querySelectorAll("[data-site-link]");
 const copyNameButton = document.getElementById("copy-name-button");
 const copyLinkValue = document.getElementById("copy-link-value");
 const copyToast = document.getElementById("copy-toast");
 const miniProgramName = document.getElementById("entry-title").textContent.trim();
-const shortLink = window.MINI_PROGRAM_SHORT_LINK;
+const siteLinks = window.SITE_LINKS;
+const shortLink = siteLinks.miniProgramShortLink;
 let toastTimer;
 
 copyLinkValue.textContent = shortLink;
+
+linkButtons.forEach((element) => {
+  const href = siteLinks[element.dataset.siteLink];
+  if (href) element.href = href;
+});
 
 const showToast = (message, type = "success") => {
   clearTimeout(toastTimer);
