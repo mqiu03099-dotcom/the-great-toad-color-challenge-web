@@ -13,15 +13,15 @@
   "pageAdWindowMinutes": 5,
   "pageAdSlots": {
     "home": {
-      "adUnitId": "adunit-206e4eed07df0a71",
+      "adUnitId": "adunit-62e576fe989ec83c",
       "maxPerHour": 3
     },
     "game": {
-      "adUnitId": "adunit-1daf3c20b0292b6f",
+      "adUnitId": "adunit-cd9d7fa9526f0336",
       "maxPerHour": 3
     },
     "result": {
-      "adUnitId": "adunit-1a11a65e46cbe4be",
+      "adUnitId": "adunit-e4dfcbf6e5c78e7b",
       "maxPerHour": 3
     }
   },
