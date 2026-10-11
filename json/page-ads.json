@@ -1,5 +1,15 @@
 {
   "donationUrl": "https://mp.weixin.qq.com/s/NZTkspV7us1JqeoB4o8zAw",
+  "gameColorConfig": {
+    "differenceMin": 4,
+    "differenceStart": 8,
+    "differenceStep": 0.3,
+    "hueStep": 137,
+    "lightnessMax": 56,
+    "lightnessMin": 44,
+    "saturationMax": 60,
+    "saturationMin": 44
+  },
   "pageAdWindowMinutes": 5,
   "pageAdSlots": {
     "home": {
