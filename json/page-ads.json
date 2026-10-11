@@ -1,0 +1,23 @@
+{
+  "pageAdWindowMinutes": 5,
+  "pageAdSlots": {
+    "home": {
+      "adUnitId": "adunit-206e4eed07df0a71",
+      "maxPerHour": 3
+    },
+    "game": {
+      "adUnitId": "adunit-1daf3c20b0292b6f",
+      "maxPerHour": 3
+    },
+    "result": {
+      "adUnitId": "adunit-1a11a65e46cbe4be",
+      "maxPerHour": 3
+    }
+  },
+  "pageAdUnitIds": {
+    "gameRules": "adunit-b27f5452cb46e2e4",
+    "rewardedVideo": "adunit-b68f49486d37c7d8",
+    "stickerGallery": "adunit-1719c68e1fee52bc"
+  }
+}
+
