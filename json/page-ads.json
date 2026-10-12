@@ -27,7 +27,9 @@
   },
   "pageAdUnitIds": {
     "gameRules": "adunit-b27f5452cb46e2e4",
+    "leaderboard": "adunit-57bfd76899169164",
     "rewardedVideo": "adunit-b68f49486d37c7d8",
+    "settings": "adunit-061990c98796f24c",
     "stickerGallery": "adunit-1719c68e1fee52bc"
   }
 }
