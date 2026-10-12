@@ -10,11 +10,11 @@
     "saturationMax": 60,
     "saturationMin": 44
   },
-  "pageAdWindowMinutes": 5,
+  "pageAdWindowMinutes": 4,
   "pageAdSlots": {
     "home": {
       "adUnitId": "adunit-62e576fe989ec83c",
-      "maxPerHour": 4
+      "maxPerHour": 5
     },
     "game": {
       "adUnitId": "adunit-cd9d7fa9526f0336",
