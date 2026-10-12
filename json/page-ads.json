@@ -14,7 +14,7 @@
   "pageAdSlots": {
     "home": {
       "adUnitId": "adunit-62e576fe989ec83c",
-      "maxPerHour": 2
+      "maxPerHour": 4
     },
     "game": {
       "adUnitId": "adunit-cd9d7fa9526f0336",
@@ -22,7 +22,7 @@
     },
     "result": {
       "adUnitId": "adunit-e4dfcbf6e5c78e7b",
-      "maxPerHour": 2
+      "maxPerHour": 3
     }
   },
   "pageAdUnitIds": {
