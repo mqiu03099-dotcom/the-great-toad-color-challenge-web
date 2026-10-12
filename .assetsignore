@@ -1,0 +1,9 @@
+.git
+.wrangler
+.dev.vars
+.assetsignore
+.gitignore
+functions
+worker
+db
+wrangler.toml

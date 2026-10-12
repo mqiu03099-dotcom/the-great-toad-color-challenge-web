@@ -1,0 +1,12 @@
+name = "the-great-toad-color-challenge-web"
+main = "worker/index.js"
+compatibility_date = "2026-10-12"
+
+[assets]
+directory = "."
+binding = "ASSETS"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "milk-frog"
+database_id = "777c6a6a-6171-42d2-a61b-47173c069940"
