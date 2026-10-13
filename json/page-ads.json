@@ -31,6 +31,16 @@
     "rewardedVideo": "adunit-b68f49486d37c7d8",
     "settings": "adunit-061990c98796f24c",
     "stickerGallery": "adunit-1719c68e1fee52bc"
+  },
+  "pageAdUnitIdsV2": {
+    "game": "adunit-cd9d7fa9526f0336",
+    "gameRules": "adunit-b27f5452cb46e2e4",
+    "home": "adunit-62e576fe989ec83c",
+    "leaderboard": "adunit-57bfd76899169164",
+    "result": "adunit-e4dfcbf6e5c78e7b",
+    "rewardedVideo": "adunit-b68f49486d37c7d8",
+    "settings": "adunit-061990c98796f24c",
+    "stickerGallery": "adunit-1719c68e1fee52bc"
   }
 }
 
