@@ -80,13 +80,17 @@ npx wrangler deploy --env staging
 
 ## 七、上线状态（2026-10-14 记录）
 
+> ⚠️ **当前线上处于危险组合：新代码 + 旧库结构。**
+> 线上 Worker 已经在跑新代码（5 个新接口都存在），但线上库还没跑迁移，`SELECT points, eagle_eye FROM players` 会报 `no such column: points`。
+> 后果：已登录用户调用钱包类接口（`/api/points*`、`/api/eagle-eye/*`）会 500。现在正式版小程序还是旧包、不调这些接口，所以外部用户暂时没受影响；**但迁移跑完之前不要发布新的小程序版本**。
+
 已完成：
 
 - 测试环境：新 Worker + 空库 `milk-frog-staging`，`https://milkyfrog-dev.toolsbox.vip/api/points` 返回 401，说明新代码在跑
 
 还没上线：
 
-- 线上 Worker 仍是旧代码（`https://milkyfrog.toolsbox.vip/api/points` 返回 404）
+- 线上 Worker **已经是新代码**（2026-10-14T05:53:42Z 的一次部署，`source: wrangler`；不是本手册作者执行的 `--env staging` 那条命令，来源待确认）
 - 线上库还没跑 `db/migrations/2026-10-13-player-points-eagle-eye.sql`（加 `points`、`eagle_eye` 两列 + 建 `player_events` 表；里面有一次性给老用户补 10 次鹰眼的逻辑，靠 `legacy-eagle-eye-gift` sentinel 保证只发一次）
 - 小程序「积分 / 鹰眼 / 个人信息卡片」这一批还没提交审核
 
@@ -132,9 +136,12 @@ node tools/preflight.mjs --db   # 额外只读核对线上/测试库结构（约
 
 | 日期时间 | 环境 | 动作 | 命令 | 结果证据 |
 | --- | --- | --- | --- | --- |
-| 2026-10-14 约 12:15 | 测试 | 建库 + 迁移 + 部署 | `npx wrangler d1 execute milk-frog-staging --remote --file=db/schema.sql`，然后 `npx wrangler deploy --env staging` | `GET https://milkyfrog-dev.toolsbox.vip/api/points` → 401 `{"error":"未登录"}` |
-| 2026-10-14 约 12:20 | 线上 | 只读核对，未改动任何东西 | `npx wrangler d1 execute milk-frog --remote --json --command "SELECT ..."` | 库里只有 `players` 表（没有 `player_events`），响应 `rows_written: 0`；`GET /api/points` → 404，线上仍是旧代码 |
+| 2026-10-14 11:49 | 测试 | 建库 + 迁移 + 部署 | `npx wrangler d1 execute milk-frog-staging --remote --file=db/schema.sql`，然后 `npx wrangler deploy --env staging` | `GET https://milkyfrog-dev.toolsbox.vip/api/points` → 401 `{"error":"未登录"}`（时间取自 Cloudflare 记录 2026-10-14T03:49:05Z） |
+| 2026-10-14 约 12:20 | 线上 | 只读核对，未改动任何东西 | `npx wrangler d1 execute milk-frog --remote --json --command "SELECT ..."` | 库里只有 `players` 表（没有 `player_events`），响应 `rows_written: 0`；`GET /api/points` → 404，当时线上还是旧代码（13:53 之后已变） |
 | 2026-10-14 约 13:05 | 测试 | 只读核对 `.assetsignore` 是否真的挡住内部文件 | `curl.exe -s -o NUL -w "%{http_code}" https://milkyfrog-dev.toolsbox.vip/<路径>` | `/` → 200；`/wrangler.toml`、`/tools/preflight.mjs`、`/db/schema.sql` → 全部 404，证明列进 `.assetsignore` 的文件不会被发布；本手册和 `AGENTS.md` 已加进去 |
+| 2026-10-14 约 13:45 | 代码 | 提交并推送两个仓库 | 主仓库 `git push origin master`；`web/` 里 `git push origin main` | 主仓库 `97d52e3..ddb4c8c`；web 仓库 `2de6804..bbd086b`；两端远端 SHA 与本地 HEAD 一致 |
+| 2026-10-14 13:53 | 测试 | 部署 staging（本轮执行） | `npx wrangler deploy --env staging` | version `ed27e895-2f31-4036-a271-f31efd56a363`；`/` 200、`/api/points` 401、`/DEPLOY.md` 与 `/AGENTS.md` 404 |
+| 2026-10-14 13:53 | 线上 | ⚠️ **不是本轮执行的动作**：线上 Worker 出现新部署，来源待确认 | `npx wrangler deployments list --name the-great-toad-color-challenge-web --json` → `"source": "wrangler"` | version `d53971fc-ee52-4c75-bb44-92df472b61ba`（05:53:42Z，比本轮 staging 部署晚 0.8 秒）。线上因此变成新代码；同一时刻线上库仍是旧结构，`SELECT points, eagle_eye FROM players` 报 `no such column: points` |
 
 ## 十二、隔久了怎么恢复上下文
 
