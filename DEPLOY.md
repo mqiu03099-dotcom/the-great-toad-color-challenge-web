@@ -84,23 +84,22 @@ npx wrangler deploy --env staging
 - 开发管理 → 开发设置 → 服务器域名 → request 合法域名：已加 `https://milkyfrog.toolsbox.vip`、`https://milkyfrog-dev.toolsbox.vip`
 - 这个配置**每个自然月只有 5 次修改机会**
 
-## 七、上线状态（2026-10-14 记录）
-
-> ⚠️ **当前线上处于危险组合：新代码 + 旧库结构。**
-> 线上 Worker 已经在跑新代码（5 个新接口都存在），但线上库还没跑迁移，`SELECT points, eagle_eye FROM players` 会报 `no such column: points`。
-> 后果：已登录用户调用钱包类接口（`/api/points*`、`/api/eagle-eye/*`）会 500。现在正式版小程序还是旧包、不调这些接口，所以外部用户暂时没受影响；**但迁移跑完之前不要发布新的小程序版本**。
+## 七、上线状态（2026-10-14 晚记录）
 
 已完成：
 
 - 测试环境：新 Worker + 空库 `milk-frog-staging`，`https://milkyfrog-dev.toolsbox.vip/api/points` 返回 401，说明新代码在跑
+- 线上 Worker 已回滚到 `b6034800`（2026-10-14 14:54，即误发布前的版本），线上回到「旧代码 + 旧库结构」的一致状态：`/api/points` 返回 404
 
-还没上线：
+还没上线（明天要一次性补上）：
 
-- 线上 Worker **已经是新代码**（2026-10-14T05:53:42Z 的一次部署，`source: wrangler`；不是本手册作者执行的 `--env staging` 那条命令，来源待确认）
 - 线上库还没跑 `db/migrations/2026-10-13-player-points-eagle-eye.sql`（加 `points`、`eagle_eye` 两列 + 建 `player_events` 表；里面有一次性给老用户补 10 次鹰眼的逻辑，靠 `legacy-eagle-eye-gift` sentinel 保证只发一次）
+- 线上库还没跑 `db/migrations/2026-10-14-players-rank-index.sql`（榜单排序索引 `players_rank`，名次查询靠它才能覆盖 `updated_at`）
+- 线上库还没跑 `db/migrations/2026-10-14-player-stats-buckets.sql`（`player_stats`、`score_buckets` 两张汇总表 + 3 个触发器 + 回填）
+- 待上线的 Worker 里带了读取量优化（`/api/stats` 改读汇总表、名次查询改走分数桶）：**没有先跑 `2026-10-14-player-stats-buckets.sql` 就 deploy，`/api/stats` 和带登录态的 `/api/leaderboard` 会 500**
 - 小程序「积分 / 鹰眼 / 个人信息卡片」这一批还没提交审核
 
-上线顺序：**先跑迁移 → 再 `npx wrangler deploy` → 再提交审核 → 最后发布**
+上线顺序：**先跑三条迁移 → 再 `npx wrangler deploy` → 再提交审核 → 最后发布**
 
 ## 八、回滚
 
@@ -126,15 +125,17 @@ node tools/preflight.mjs --db   # 额外只读核对线上/测试库结构（约
 
 - [ ] 1. 确认工作区：仓库根目录和 `web/` 各跑一次 `git status --short`，确认要上线的改动都已提交
 - [ ] 2. 自检：`cd web; node tools/preflight.mjs --db`，先看「待办」一节
-- [ ] 3. 线上库迁移：`npx wrangler d1 execute milk-frog --remote --file=db/migrations/2026-10-13-player-points-eagle-eye.sql`
-- [ ] 4. 核对线上库结构：再跑 `node tools/preflight.mjs --db`，线上三个标记必须都是 `OK`
+- [ ] 3. 线上库迁移（**三条都要，顺序不能反**）：`npx wrangler d1 execute milk-frog --remote --file=db/migrations/2026-10-13-player-points-eagle-eye.sql`，再 `npx wrangler d1 execute milk-frog --remote --file=db/migrations/2026-10-14-players-rank-index.sql`，最后 `npx wrangler d1 execute milk-frog --remote --file=db/migrations/2026-10-14-player-stats-buckets.sql`
+- [ ] 4. 核对线上库结构：再跑 `node tools/preflight.mjs --db`，线上六个标记（`points` / `eagle_eye` / `player_events` / `players_rank` / `player_stats` / `score_buckets`）必须都是 `OK`
 - [ ] 5. 发 Worker：`npx wrangler deploy`（**不带 `--env`**；带 `--env staging` 发的是测试环境，别搞反）
-- [ ] 6. 验证接口：`curl.exe -s https://milkyfrog.toolsbox.vip/api/points` 应返回 401 `{"error":"未登录"}`；返回 404 说明还是旧代码
+- [ ] 6. 验证接口：`curl.exe -s https://milkyfrog.toolsbox.vip/api/points` 和 `.../api/user` 都应返回 401 `{"error":"未登录"}`；返回 404 说明还是旧代码
 - [ ] 7. 线上真机过一遍：积分累计、鹰眼兑换、个人信息卡片、结果页最佳纪录
 - [ ] 8. 小程序：上传 → 提交审核 → 审核通过后发布
 - [ ] 9. 回填第十一节的记录
 
 顺序不能反：第 3 步没做就做第 5 步，新接口会 500；反过来先 deploy 后迁移，只有新接口不可用，补跑迁移即可恢复，老功能不受影响。
+
+重复执行：`2026-10-14` 的两条都是 `IF NOT EXISTS` + 末尾按 `players` 重算，可以放心重跑；手动删过 `players` 里的行之后，也用 `2026-10-14-player-stats-buckets.sql` 把汇总表修回真实值（目前没有 `DELETE` 触发器，删行不会自动减）。`2026-10-13` 那条不是可重复执行的（列已存在时 `ALTER` 会报错，脚本会不会继续往下跑未实测），跑之前先看第 2 步的 `players.points` 标记，已经是 `OK` 就别再跑。
 
 ## 十一、上线记录（每次上线追加一行，不要删旧行）
 
@@ -158,7 +159,7 @@ node tools/preflight.mjs --db   # 额外只读核对线上/测试库结构（约
 
 三步，两分钟：
 
-1. 读本文件，重点看第一、二、三、七、十节
+1. 读本文件，重点看第一、二、三、七、十、十三节
 2. `cd web; node tools/preflight.mjs --db`——「待办」会直接告诉你线上还差哪一步
 3. 需要本机级细节（wrangler 登录位置、本机踩过的坑）看记忆笔记：
    `C:\Users\blbq2\.codex\memories\extensions\ad_hoc\notes\20261014-121613-the-great-toad-envs-and-deploy.md`
@@ -171,3 +172,59 @@ node tools/preflight.mjs --db   # 额外只读核对线上/测试库结构（约
 - `deploy` 的 `--env` 带错方向，把测试发成了线上（或反过来把线上发成测试）
 - 改了 `constants/wechat-login.js` 的域名映射，但没重新上传体验版，测试环境不生效
 - 微信后台的 request 合法域名没加新域名（每月只有 5 次修改机会，先想清楚再改）
+
+## 十三、接口清单与 `/api/user` 字段契约
+
+`worker/api.js` 里的 `ROUTES` 就是全部路由，`方法 + 路径` 必须完全匹配，否则 404 `{"error":"接口不存在"}`。
+鉴权=「需要」表示请求头必须带 `authorization: Bearer <token>`，缺失或过期返回 401 `{"error":"未登录"}`（客户端拿到 401 会清 token 重登一次再重试）。
+
+| 方法 路径 | 用途 | 鉴权 | 读行数 | 写库 |
+| --- | --- | --- | --- | --- |
+| `POST /api/login` | `code` 换 token（有效期 7 天） | 不需要 | — | 新用户注册要写 |
+| `POST /api/score` | 上报本局分数、刷新最高分 | 需要 | — | 写 |
+| `POST /api/nickname` | 保存昵称 | 需要 | — | 写 |
+| `GET /api/leaderboard` | 榜单前 20 名 + 自己的名次 | 可选 | 20 + 5 | 不写 |
+| `GET /api/user` | **`players` 表全字段 + 总人数**，读玩家资料只走这一个 | 需要 | 2 | 不写 |
+| `GET /api/stats` | 总人数（公开） | 不需要 | 1 | 不写 |
+| `GET /api/points` | 余额 | 需要 | 1 | 不写 |
+| `POST /api/points/earn` | 结算本局积分 | 需要 | — | 写 |
+| `POST /api/points/spend` | 用积分换鹰眼 | 需要 | — | 写 |
+| `POST /api/eagle-eye/use` | 消耗一次鹰眼 | 需要 | — | 写 |
+| `POST /api/eagle-eye/reward` | 看完激励广告加一次鹰眼 | 需要 | — | 写 |
+
+读行数一列是 2026-10-14 在本地 dev 库（2953 个玩家）实测值；榜单和名次是两条 SQL 合计，名次靠 `players_rank` 索引 + `score_buckets` 汇总才只有 5 行，没有它们会退化成全表扫描。
+
+### `/api/user` 字段契约
+
+`players` 表实际只有 6 列：`openid`、`nickname`、`best_score`、`points`、`eagle_eye`、`updated_at`。
+`GET /api/user` 返回**除 `openid` 之外的全部 5 列**，再额外带上总人数 `players`（它来自 `player_stats`，不是 `players` 的列）：
+
+```json
+{
+  "bestScore": 842,
+  "bestScoreAt": 1760002856,
+  "eagleEye": 3,
+  "nickname": "奶蛙2856",
+  "players": 2953,
+  "points": 0
+}
+```
+
+- `bestScoreAt` 就是 `updated_at`，表示达成当前最高分的时刻（同分排序要用）；`points` 是 `REAL`，可能带小数（本局分数 ÷ 10）
+- 接口是驼峰、库里是下划线，转换只在这一处做；**`openid` 一律不出接口**
+- 没有 token → 401；玩家那一行不存在时返回默认值（`eagleEye` = `EAGLE_EYE_INITIAL_COUNT`，其余 0）
+- 客户端只有 `utils/player.js` 的 `requestUser()` 调它，`pages/index`、`pages/game`、`pages/result`、`pages/settings`、`components/eagle-eye-drawer` 都从这里取资料；**读接口只剩「个人资料」和「榜单」两个，其余全是写**
+- 兼容：`GET /api/stats`、`GET /api/points` 新版本前端已不再调用，但正式版老包还在用 `/api/stats`，所以先保留，等老包退役再删
+
+### 上线顺序（三条迁移不能反）
+
+1. `cd web; node tools/preflight.mjs --db`（只读，看「待办」）
+2. `npx wrangler d1 execute milk-frog --remote --file=db/migrations/2026-10-13-player-points-eagle-eye.sql`
+3. `npx wrangler d1 execute milk-frog --remote --file=db/migrations/2026-10-14-players-rank-index.sql`
+4. `npx wrangler d1 execute milk-frog --remote --file=db/migrations/2026-10-14-player-stats-buckets.sql`
+5. `npx wrangler deploy`（不带 `--env`）
+6. 验接口：`curl.exe -s https://milkyfrog.toolsbox.vip/api/points` → 401，`.../api/user` → 401，`.../api/stats` → 200
+7. 小程序上传 → 提交审核 → 审核通过后发布
+
+第 2～4 步必须早于第 5 步：新 Worker 的 `/api/stats` 和带登录态的 `/api/leaderboard` 要读 `player_stats`、`score_buckets`，表不在就是 500。
+详细清单和重复执行注意事项见第十节。

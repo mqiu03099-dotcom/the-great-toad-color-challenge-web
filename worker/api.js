@@ -1,8 +1,8 @@
 // 小程序排行榜接口：/api/login /api/score /api/nickname /api/leaderboard
 const TOKEN_TTL_SECONDS = 7 * 24 * 60 * 60;
 const MAX_NICKNAME_LENGTH = 16;
-const DEFAULT_LIST_LIMIT = 50;
-const MAX_LIST_LIMIT = 100;
+// 榜单固定只出前 20 名，服务端写死，客户端不再传 limit
+const LIST_LIMIT = 20;
 // 榜单列表和个人名次必须共用同一套排序，否则同分时名次会和行号不一致
 // shortcut: updated_at 只有秒精度，同秒同分只能按 openid 定序，要更细需提高 handleScore 的时间精度
 const RANK_ORDER = "best_score DESC, updated_at ASC, openid ASC";
@@ -216,9 +216,10 @@ const normalizePoints = (value) =>
   Number.isFinite(value) ? Math.round(value * 10) / 10 : 0;
 
 // 积分和鹰眼次数都存服务端，返回给客户端的就是这份余额
+// 昵称跟着这一行一起带回去，设置页就不用为了回显昵称再拉一次榜单
 async function readWallet(env, openid) {
   const row = await env.DB.prepare(
-    "SELECT points, eagle_eye FROM players WHERE openid = ?",
+    "SELECT points, eagle_eye, nickname FROM players WHERE openid = ?",
   )
     .bind(openid)
     .first();
@@ -229,6 +230,7 @@ async function readWallet(env, openid) {
       row && Number.isInteger(row.eagle_eye)
         ? row.eagle_eye
         : EAGLE_EYE_INITIAL_COUNT,
+    nickname: row ? row.nickname || "" : "",
   };
 }
 
@@ -248,6 +250,36 @@ async function removePlayerEvent(env, requestId) {
   await env.DB.prepare("DELETE FROM player_events WHERE request_id = ?")
     .bind(requestId)
     .run();
+}
+
+// 玩家资料：players 里除 openid 外的字段 + 总人数，一次请求拿全
+// bestScoreAt 就是 updated_at，表示达成当前最高分的时刻（同分排序用）
+async function handleUser(request, env) {
+  const openid = await readOpenid(request, env);
+
+  if (!openid) {
+    return json({ error: "未登录" }, 401);
+  }
+
+  const row = await env.DB.prepare(
+    `SELECT nickname, best_score, points, eagle_eye, updated_at,
+            (SELECT players FROM player_stats WHERE id = 1) AS players
+       FROM players WHERE openid = ?`,
+  )
+    .bind(openid)
+    .first();
+
+  return json({
+    bestScore: row ? row.best_score : 0,
+    bestScoreAt: row ? row.updated_at : 0,
+    eagleEye:
+      row && Number.isInteger(row.eagle_eye)
+        ? row.eagle_eye
+        : EAGLE_EYE_INITIAL_COUNT,
+    nickname: row ? row.nickname || "" : "",
+    players: row && Number.isInteger(row.players) ? row.players : 0,
+    points: row ? normalizePoints(row.points) : 0,
+  });
 }
 
 async function handlePoints(request, env) {
@@ -421,41 +453,58 @@ async function readMyRank(request, env) {
     return null;
   }
 
-  const row = await env.DB.prepare(
-    `SELECT rank, best_score, nickname FROM (
-       SELECT openid, nickname, best_score, ROW_NUMBER() OVER (ORDER BY ${RANK_ORDER}) AS rank
-       FROM players WHERE best_score > 0
-     ) WHERE openid = ?`,
+  // 自己的那一行走主键查，只读 1 行
+  const me = await env.DB.prepare(
+    "SELECT nickname, best_score, updated_at FROM players WHERE openid = ?",
   )
     .bind(openid)
     .first();
 
-  if (row) {
-    return { rank: row.rank, score: row.best_score, nickname: row.nickname || "" };
+  if (!me) {
+    return null;
   }
 
   // 还没上过榜也要把昵称带回去，客户端据此判断“设置过昵称没有”
-  const me = await env.DB.prepare("SELECT nickname FROM players WHERE openid = ?")
-    .bind(openid)
+  if (me.best_score <= 0) {
+    return { rank: null, score: 0, nickname: me.nickname || "" };
+  }
+
+  // 名次 = 排在自己前面的人数 + 1，口径必须和 RANK_ORDER 一致：
+  // 分数高的在前；同分 updated_at 早的在前；再相同按 openid
+  // 分数比我高的那一段由 score_buckets 求和给出（最多 99 行），只剩本桶内比我先的少数几行要精确数
+  const bucket = Math.floor(me.best_score / 10);
+  const row = await env.DB.prepare(
+    `SELECT
+       (SELECT COALESCE(SUM(cnt), 0) FROM score_buckets WHERE bucket > ?) AS higher_buckets,
+       (SELECT COUNT(*) FROM players
+         WHERE best_score > ? AND best_score < ?) AS same_bucket,
+       (SELECT COUNT(*) FROM players
+         WHERE best_score = ? AND (updated_at < ? OR (updated_at = ? AND openid < ?))) AS tie_ahead`,
+  )
+    .bind(
+      bucket,
+      me.best_score,
+      (bucket + 1) * 10,
+      me.best_score,
+      me.updated_at,
+      me.updated_at,
+      openid,
+    )
     .first();
 
-  return me ? { rank: null, score: 0, nickname: me.nickname || "" } : null;
+  return {
+    rank: row.higher_buckets + row.same_bucket + row.tie_ahead + 1,
+    score: me.best_score,
+    nickname: me.nickname || "",
+  };
 }
 
 async function handleLeaderboard(request, env) {
-  const requested = Number.parseInt(
-    new URL(request.url).searchParams.get("limit"),
-    10,
-  );
-  const limit = Number.isInteger(requested)
-    ? Math.min(Math.max(requested, 1), MAX_LIST_LIMIT)
-    : DEFAULT_LIST_LIMIT;
-
   const { results } = await env.DB.prepare(
     `SELECT nickname, best_score FROM players WHERE best_score > 0
      ORDER BY ${RANK_ORDER} LIMIT ?`,
   )
-    .bind(limit)
+    .bind(LIST_LIMIT)
     .all();
 
   const list = results.map((row, index) => ({
@@ -468,9 +517,10 @@ async function handleLeaderboard(request, env) {
 }
 
 // 首页页脚的用户总数，公开接口，注册过就算一个人
+// 数字由 players 上的触发器维护，读一行就够，不再每次扫全表
 async function handleStats(request, env) {
   const row = await env.DB.prepare(
-    "SELECT COUNT(*) AS players FROM players",
+    "SELECT players FROM player_stats WHERE id = 1",
   ).first();
 
   return json({ players: row ? row.players : 0 });
@@ -483,6 +533,7 @@ const ROUTES = {
   "GET leaderboard": handleLeaderboard,
   "GET stats": handleStats,
   "GET points": handlePoints,
+  "GET user": handleUser,
   "POST points/earn": handlePointsEarn,
   "POST points/spend": handlePointsSpend,
   "POST eagle-eye/use": handleEagleEyeUse,
