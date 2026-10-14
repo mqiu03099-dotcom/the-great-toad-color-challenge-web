@@ -7,3 +7,6 @@ functions
 worker
 db
 wrangler.toml
+tools
+AGENTS.md
+DEPLOY.md

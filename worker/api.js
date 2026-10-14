@@ -8,6 +8,13 @@ const MAX_LIST_LIMIT = 100;
 const RANK_ORDER = "best_score DESC, updated_at ASC, openid ASC";
 // shortcut: 999 只挡明显离谱的分数，客户端上报本身就可伪造；要真防作弊得让服务端出题发 token
 const MAX_SCORE = 999;
+// 积分：一局得分每 10 分换 1 积分，10 积分兑换 1 次鹰眼
+const EAGLE_EYE_ITEM = "eagleEye";
+// 新注册就送 3 次，和建表默认值保持一致
+const EAGLE_EYE_INITIAL_COUNT = 3;
+const EAGLE_EYE_POINT_COST = 10;
+const POINTS_PER_SCORE_DIVISOR = 10;
+const MAX_REQUEST_ID_LENGTH = 64;
 
 const json = (data, status = 200) =>
   new Response(JSON.stringify(data), {
@@ -198,6 +205,215 @@ async function handleNickname(request, env) {
   return json({ nickname: trimmed });
 }
 
+// 客户端给每次积分结算/兑换生成一个唯一 ID，网络重试带着同一个 ID 过来时只认第一次
+const isRequestId = (value) =>
+  typeof value === "string" &&
+  value.length > 0 &&
+  value.length <= MAX_REQUEST_ID_LENGTH;
+
+// 积分是分数除以 10，可能带一位小数；读出来顺手抹掉浮点尾巴
+const normalizePoints = (value) =>
+  Number.isFinite(value) ? Math.round(value * 10) / 10 : 0;
+
+// 积分和鹰眼次数都存服务端，返回给客户端的就是这份余额
+async function readWallet(env, openid) {
+  const row = await env.DB.prepare(
+    "SELECT points, eagle_eye FROM players WHERE openid = ?",
+  )
+    .bind(openid)
+    .first();
+
+  return {
+    points: row ? normalizePoints(row.points) : 0,
+    eagleEye:
+      row && Number.isInteger(row.eagle_eye)
+        ? row.eagle_eye
+        : EAGLE_EYE_INITIAL_COUNT,
+  };
+}
+
+async function recordPlayerEvent(env, requestId, openid, resource, delta) {
+  const result = await env.DB.prepare(
+    `INSERT INTO player_events (request_id, openid, resource, delta, created_at)
+     VALUES (?, ?, ?, ?, ?) ON CONFLICT(request_id) DO NOTHING`,
+  )
+    .bind(requestId, openid, resource, delta, Math.floor(Date.now() / 1000))
+    .run();
+
+  return Boolean(result.meta && result.meta.changes);
+}
+
+// 扣不动（余额不够）时撤掉这次幂等记录，玩家条件够了再用同一个 requestId 重试
+async function removePlayerEvent(env, requestId) {
+  await env.DB.prepare("DELETE FROM player_events WHERE request_id = ?")
+    .bind(requestId)
+    .run();
+}
+
+async function handlePoints(request, env) {
+  const openid = await readOpenid(request, env);
+
+  if (!openid) {
+    return json({ error: "未登录" }, 401);
+  }
+
+  return json(await readWallet(env, openid));
+}
+
+// 一局结束结算积分，同一个 roundId 只会入账一次
+async function handlePointsEarn(request, env) {
+  const openid = await readOpenid(request, env);
+
+  if (!openid) {
+    return json({ error: "未登录" }, 401);
+  }
+
+  const { roundId, score } = await readJsonBody(request);
+
+  if (!isRequestId(roundId)) {
+    return json({ error: "缺少对局标识" }, 400);
+  }
+
+  if (!Number.isInteger(score) || score < 0 || score > MAX_SCORE) {
+    return json({ error: "分数不合法" }, 400);
+  }
+
+  const gained = score / POINTS_PER_SCORE_DIVISOR;
+
+  if (
+    !(await recordPlayerEvent(env, `earn:${roundId}`, openid, "points", gained))
+  ) {
+    return json({ ...(await readWallet(env, openid)), gained });
+  }
+
+  // 不动 updated_at，它代表最高分达成时刻，改了会打乱同分排名
+  await env.DB.prepare(
+    `INSERT INTO players (openid, points, updated_at) VALUES (?, ?, ?)
+     ON CONFLICT(openid) DO UPDATE SET points = ROUND(players.points + excluded.points, 1)`,
+  )
+    .bind(openid, gained, Math.floor(Date.now() / 1000))
+    .run();
+
+  return json({ ...(await readWallet(env, openid)), gained });
+}
+
+// 兑换道具：扣积分和幂等记录绑定，扣不动就撤掉记录，玩家攒够积分后重试才能真的兑换
+async function handlePointsSpend(request, env) {
+  const openid = await readOpenid(request, env);
+
+  if (!openid) {
+    return json({ error: "未登录" }, 401);
+  }
+
+  const { item, requestId } = await readJsonBody(request);
+
+  if (!isRequestId(requestId)) {
+    return json({ error: "缺少兑换标识" }, 400);
+  }
+
+  if (item !== EAGLE_EYE_ITEM) {
+    return json({ error: "道具不存在" }, 400);
+  }
+
+  if (
+    !(await recordPlayerEvent(
+      env,
+      `spend:${requestId}`,
+      openid,
+      "points",
+      -EAGLE_EYE_POINT_COST,
+    ))
+  ) {
+    return json({ ...(await readWallet(env, openid)), granted: 1 });
+  }
+
+  // 扣积分和加次数放在同一条 UPDATE 里，不会出现扣了积分没加次数
+  const result = await env.DB.prepare(
+    `UPDATE players SET points = ROUND(points - ?, 1), eagle_eye = eagle_eye + 1
+     WHERE openid = ? AND points >= ?`,
+  )
+    .bind(EAGLE_EYE_POINT_COST, openid, EAGLE_EYE_POINT_COST)
+    .run();
+
+  if (!result.meta || !result.meta.changes) {
+    await removePlayerEvent(env, `spend:${requestId}`);
+
+    return json({ error: "积分不足" }, 409);
+  }
+
+  return json({ ...(await readWallet(env, openid)), granted: 1 });
+}
+
+// 用一次鹰眼：先扣服务端次数，扣成功客户端才揭示答案
+async function handleEagleEyeUse(request, env) {
+  const openid = await readOpenid(request, env);
+
+  if (!openid) {
+    return json({ error: "未登录" }, 401);
+  }
+
+  const { requestId } = await readJsonBody(request);
+
+  if (!isRequestId(requestId)) {
+    return json({ error: "缺少使用标识" }, 400);
+  }
+
+  if (
+    !(await recordPlayerEvent(env, `use:${requestId}`, openid, "eagleEye", -1))
+  ) {
+    return json(await readWallet(env, openid));
+  }
+
+  const result = await env.DB.prepare(
+    "UPDATE players SET eagle_eye = eagle_eye - 1 WHERE openid = ? AND eagle_eye > 0",
+  )
+    .bind(openid)
+    .run();
+
+  if (!result.meta || !result.meta.changes) {
+    await removePlayerEvent(env, `use:${requestId}`);
+
+    return json({ error: "鹰眼不够" }, 409);
+  }
+
+  return json(await readWallet(env, openid));
+}
+
+// 看完激励广告送一次鹰眼：广告没有服务端回调，客户端上报的 requestId 只能防重复入账
+async function handleEagleEyeReward(request, env) {
+  const openid = await readOpenid(request, env);
+
+  if (!openid) {
+    return json({ error: "未登录" }, 401);
+  }
+
+  const { requestId } = await readJsonBody(request);
+
+  if (!isRequestId(requestId)) {
+    return json({ error: "缺少奖励标识" }, 400);
+  }
+
+  if (
+    !(await recordPlayerEvent(
+      env,
+      `reward:${requestId}`,
+      openid,
+      "eagleEye",
+      1,
+    ))
+  ) {
+    return json(await readWallet(env, openid));
+  }
+
+  await env.DB.prepare(
+    "UPDATE players SET eagle_eye = eagle_eye + 1 WHERE openid = ?",
+  )
+    .bind(openid)
+    .run();
+
+  return json(await readWallet(env, openid));
+}
+
 async function readMyRank(request, env) {
   const openid = await readOpenid(request, env);
 
@@ -214,10 +430,16 @@ async function readMyRank(request, env) {
     .bind(openid)
     .first();
 
-  // 客户端本地缓存丢了也能拿回服务端存过的昵称，设置页据此回显
-  return row
-    ? { rank: row.rank, score: row.best_score, nickname: row.nickname || "" }
-    : null;
+  if (row) {
+    return { rank: row.rank, score: row.best_score, nickname: row.nickname || "" };
+  }
+
+  // 还没上过榜也要把昵称带回去，客户端据此判断“设置过昵称没有”
+  const me = await env.DB.prepare("SELECT nickname FROM players WHERE openid = ?")
+    .bind(openid)
+    .first();
+
+  return me ? { rank: null, score: 0, nickname: me.nickname || "" } : null;
 }
 
 async function handleLeaderboard(request, env) {
@@ -260,6 +482,11 @@ const ROUTES = {
   "POST nickname": handleNickname,
   "GET leaderboard": handleLeaderboard,
   "GET stats": handleStats,
+  "GET points": handlePoints,
+  "POST points/earn": handlePointsEarn,
+  "POST points/spend": handlePointsSpend,
+  "POST eagle-eye/use": handleEagleEyeUse,
+  "POST eagle-eye/reward": handleEagleEyeReward,
 };
 
 export async function handleApi(request, env) {

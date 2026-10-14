@@ -10,3 +10,22 @@ binding = "ASSETS"
 binding = "DB"
 database_name = "milk-frog"
 database_id = "777c6a6a-6171-42d2-a61b-47173c069940"
+
+# 体验版（trial）专用环境：独立 worker + 独立 D1，线上代码和数据都不受影响
+[env.staging]
+name = "the-great-toad-color-challenge-web-staging"
+main = "worker/index.js"
+compatibility_date = "2026-10-12"
+
+[env.staging.assets]
+directory = "."
+binding = "ASSETS"
+
+[[env.staging.d1_databases]]
+binding = "DB"
+database_name = "milk-frog-staging"
+database_id = "91d761f0-f08f-46cf-a45b-27f184a21e71"
+
+[[env.staging.routes]]
+pattern = "milkyfrog-dev.toolsbox.vip"
+custom_domain = true
