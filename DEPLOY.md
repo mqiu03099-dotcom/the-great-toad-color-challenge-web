@@ -104,7 +104,7 @@ npx wrangler deploy --env staging
 
 ## 八、回滚
 
-- Worker：Cloudflare 面板 → Workers 与 Pages → 该 Worker → 部署 → 回滚到上一版本；命令行是 `npx wrangler rollback`（**未实测**，要回滚先在测试环境试一次）
+- Worker：要回到**指定的某个历史版本**用 `npx wrangler versions deploy <版本ID>@100% --yes`（2026-10-14 14:54 线上实测）。版本 ID 从 `npx wrangler deployments list --name the-great-toad-color-challenge-web` 里取；`npx wrangler rollback` 只退到上一个部署，误发了好几版时退不到你想去的那一版
 - 库结构：目前所有迁移都是「只加不减」（`ALTER TABLE ADD COLUMN` + `CREATE TABLE IF NOT EXISTS`），没有反向脚本；D1 的面板里有按时间点恢复（**未实测**）
 
 ## 九、上线前自检（只读）
@@ -150,6 +150,9 @@ node tools/preflight.mjs --db   # 额外只读核对线上/测试库结构（约
 | 2026-10-14 13:53 | 线上 | ⚠️ **不是本轮执行的动作**：线上 Worker 出现新部署，来源待确认 | `npx wrangler deployments list --name the-great-toad-color-challenge-web --json` → `"source": "wrangler"` | version `d53971fc-ee52-4c75-bb44-92df472b61ba`（05:53:42Z，比本轮 staging 部署晚 0.8 秒）。线上因此变成新代码；同一时刻线上库仍是旧结构，`SELECT points, eagle_eye FROM players` 报 `no such column: points` |
 | 2026-10-14 14:31 | 构建配置 | 断开线上 Worker 的 Git 自动构建（只改构建配置：未触发部署、未动库、未改代码） | 后台 `Workers & Pages → the-great-toad-color-challenge-web → 设置 → 构建 → 断开连接` | 确认弹窗原文「断开连接后，将来的推送不会再触发自动部署」；断开后该区块只剩「Git 存储库 → 连接」。断开前后线上 `script_tag=39dff1a0baa3448aa519d7da2b7f8647`、`modified_on=2026-10-14T05:58:38Z`、最新部署 `f957f461`（05:58:37Z）均未变；`/api/stats` 200、`/api/leaderboard?limit=1` 200、`/api/points` 401 |
 | 2026-10-14 14:37 | 验证 | 推一个纯文档 commit，实测 push 是否还会触发自动构建（本轮执行） | 主仓库 `git push origin master`（`ddb4c8c..884ce86`，Gitee 侧本来就没有自动构建）；`web/` 里 `git push origin main`（`78c6517..438bdcb`） | `438bdcb` 的 check-runs 只剩 GitHub Pages 的 `build` / `report-build-status` / `deploy`，**没有** `Workers Builds`（对比：断开前的 `78c6517` / `bbd086b` / `2de6804` 都有）；线上 Worker `script_tag=39dff1a0baa3448aa519d7da2b7f8647`、`modified_on=2026-10-14T05:58:38Z`、最新部署 `f957f461`（05:58:37Z）全部没变；测试环境最新部署仍是 `4b8186e4`（05:53:41Z，本机手发）、`modified_on=2026-10-14T05:53:43Z` 没变；线上 `/api/stats` 200、`/api/points` 401，`/DEPLOY.md` 与 `/AGENTS.md` 仍 404 |
+
+| 2026-10-14 14:45 | 线上 | 只读核查误发布影响（未改动线上任何东西） | 接口探测 + `npx wrangler d1 execute milk-frog --remote --json --command "..."` + Cloudflare GraphQL | `GET /api/points` 带登录态 → 500 空 body（`readWallet` 读了不存在的列）；`/api/stats` 200、`/api/leaderboard?limit=3` 200 且带登录态 `me` 正常；`players` 表只有 4 列（openid/nickname/best_score/updated_at，没有 points/eagle_eye）；当天该 Worker 调用 success 2212、scriptThrewException 仅 2（均为人工探测）；全库 2941 人里 1188 人 `best_score <= 0`，这些人在正式版排行榜会多显示一块「我的名次：第 名 / 最高分 0」 |
+| 2026-10-14 14:54 | 线上 | 回滚 Worker 到误发布前的版本（本轮执行） | `npx wrangler versions deploy b6034800-304e-475d-a99b-8095e2bc6b88@100% --yes` | 回滚前 `aeb8d6b1`（05:58:37Z）；回滚后当前部署 `b6034800`（100%，版本创建于 2026-10-13T08:25:18Z，对应 commit `2de6804`）。验证：`GET /api/points` 带/不带登录态均 404、`/api/points/earn` 404、`/api/eagle-eye/state` 404、`/api/stats` 200、`/api/leaderboard?limit=3` 200 且未登录时 `me: null` |
 
 ## 十二、隔久了怎么恢复上下文
 
