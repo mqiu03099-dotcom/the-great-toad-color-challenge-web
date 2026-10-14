@@ -26,7 +26,13 @@
 | 小程序「上传体验版」 | 不变 | 不变 | 不变 |
 | 小程序「发布」 | 不变 | 不变 | **会更新版本** |
 
-`push` 不影响线上：这两个 Worker 都没接 Cloudflare 的 Git 自动构建，历史部署来源全是本地 `wrangler` 手动发的（`last_deployed_from: wrangler`）。
+`push` 不影响线上，但这条有前情：线上 Worker **曾经挂着 Cloudflare Git 自动构建**（Workers Builds，GitHub 仓库 `mqiu03099-dotcom/the-great-toad-color-challenge-web` 的 `main` 分支）——从 2026-10-12 起每次 push 都会自动构建并发布到线上，而且**不会**跑数据库迁移；2026-10-13 起线上那几次「没人手动执行过的部署」和本次「线上新代码 + 旧库结构」都是它干的。
+
+- 该 Git 连接已于 **2026-10-14 14:31** 在后台「设置 → 构建 → 断开连接」断掉，之后线上只能在本机 `npx wrangler deploy` 手发。
+- 测试环境 Worker（`...-web-staging`）从来没接过 Git 自动构建，一直只有本机 `npx wrangler deploy --env staging`。
+- 自动构建发出来的部署，元数据仍写 `source: wrangler`、`last_deployed_from: wrangler`，**光看 `wrangler deployments list` 分辨不出来**。要区分只有两条路：
+  - GitHub 上该 commit 的 check-runs 里有没有 `Workers Builds: the-great-toad-color-challenge-web`：`curl.exe -s https://api.github.com/repos/mqiu03099-dotcom/the-great-toad-color-challenge-web/commits/<sha>/check-runs`
+  - 后台「Workers & Pages → 该 Worker → 设置 → 构建」：正常是「Git 存储库 → 连接」；如果那里又列出了仓库名，说明自动构建被重新接上了（**push 会直接改线上**，先断开再 push）
 
 ## 三、后端上线（顺序不能反）
 
@@ -142,6 +148,7 @@ node tools/preflight.mjs --db   # 额外只读核对线上/测试库结构（约
 | 2026-10-14 约 13:45 | 代码 | 提交并推送两个仓库 | 主仓库 `git push origin master`；`web/` 里 `git push origin main` | 主仓库 `97d52e3..ddb4c8c`；web 仓库 `2de6804..bbd086b`；两端远端 SHA 与本地 HEAD 一致 |
 | 2026-10-14 13:53 | 测试 | 部署 staging（本轮执行） | `npx wrangler deploy --env staging` | version `ed27e895-2f31-4036-a271-f31efd56a363`；`/` 200、`/api/points` 401、`/DEPLOY.md` 与 `/AGENTS.md` 404 |
 | 2026-10-14 13:53 | 线上 | ⚠️ **不是本轮执行的动作**：线上 Worker 出现新部署，来源待确认 | `npx wrangler deployments list --name the-great-toad-color-challenge-web --json` → `"source": "wrangler"` | version `d53971fc-ee52-4c75-bb44-92df472b61ba`（05:53:42Z，比本轮 staging 部署晚 0.8 秒）。线上因此变成新代码；同一时刻线上库仍是旧结构，`SELECT points, eagle_eye FROM players` 报 `no such column: points` |
+| 2026-10-14 14:31 | 构建配置 | 断开线上 Worker 的 Git 自动构建（只改构建配置：未触发部署、未动库、未改代码） | 后台 `Workers & Pages → the-great-toad-color-challenge-web → 设置 → 构建 → 断开连接` | 确认弹窗原文「断开连接后，将来的推送不会再触发自动部署」；断开后该区块只剩「Git 存储库 → 连接」。断开前后线上 `script_tag=39dff1a0baa3448aa519d7da2b7f8647`、`modified_on=2026-10-14T05:58:38Z`、最新部署 `f957f461`（05:58:37Z）均未变；`/api/stats` 200、`/api/leaderboard?limit=1` 200、`/api/points` 401 |
 
 ## 十二、隔久了怎么恢复上下文
 
