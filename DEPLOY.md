@@ -156,6 +156,7 @@ node tools/preflight.mjs --db   # 额外只读核对线上/测试库结构（约
 | 2026-10-14 14:54 | 线上 | 回滚 Worker 到误发布前的版本（本轮执行） | `npx wrangler versions deploy b6034800-304e-475d-a99b-8095e2bc6b88@100% --yes` | 回滚前 `aeb8d6b1`（05:58:37Z）；回滚后当前部署 `b6034800`（100%，版本创建于 2026-10-13T08:25:18Z，对应 commit `2de6804`）。验证：`GET /api/points` 带/不带登录态均 404、`/api/points/earn` 404、`/api/eagle-eye/state` 404、`/api/stats` 200、`/api/leaderboard?limit=3` 200 且未登录时 `me: null` |
 
 | 2026-10-15 约 11:30 | 线上 | 优化 D1 读取：建排序索引 + 汇总表（player_stats / score_buckets + 触发器）+ 部署新版 Worker（本轮执行） | `npx wrangler d1 execute milk-frog --remote --file=db/migrations/2026-10-14-players-rank-index.sql`；`npx wrangler d1 execute milk-frog --remote --file=db/migrations/2026-10-14-player-stats-buckets.sql`；`npx wrangler deploy`（不带 --env） | 索引：8333 行读 / 4125 行写；汇总表：8904 行读 / 70 行写（此后 3 张表）；一致性 players=4125 / stats_players=4125 / bucket_sum=2357 / diff=0；部署 version `35550fb2-6554-43d8-b572-eb64eca72834`；`/api/stats` 200 `{"players":4131}`、`/api/leaderboard` 200（前 20）；真实新用户登录注册成功（stats 4125→4127，触发器联动）；score/nickname 写路径用临时 openid 冒烟通过并已清理（probes=0）；`/api/user` 等新接口当前报 `no such column: points`，属计划内，等新版小程序发布时再跑 2026-10-13 迁移 |
+| 2026-10-15 约 12:10 | 测试 | 按最新代码部署 staging（本轮执行） | `npx wrangler deploy --env staging` | version `b78a79fa-f69f-45fd-b4b9-63221440cbd8`；`GET /api/stats` → 200 `{"players":4}`、`/api/leaderboard` 200、`/api/user` 与 `/api/points` 无 token 均 401 `{"error":"未登录"}`；测试库 4 张表齐全（players 含 points/eagle_eye、player_events、player_stats、score_buckets） |
 ## 十二、隔久了怎么恢复上下文
 
 三步，两分钟：
