@@ -53,20 +53,18 @@ console.log(dirty ? dirty : " 无");
 if (dirty) todos.push("web/ 有未提交改动，确认要上线的文件都提交了");
 
 console.log("\n== 线上 Worker");
-const prodPoints = await probe(PROD, "/api/points");
-console.log(` /api/points -> ${prodPoints}`);
-console.log(` /api/stats  -> ${await probe(PROD, "/api/stats")}`);
-if (prodPoints.startsWith("404")) {
+const prodUser = await probe(PROD, "/api/user");
+console.log(` /api/user -> ${prodUser}`);
+if (prodUser.startsWith("404")) {
   todos.push(
     "线上还是旧代码：先跑 db/migrations/ 里的迁移，再执行 npx wrangler deploy（不带 --env）",
   );
 }
 
 console.log("\n== 测试环境");
-const stagingPoints = await probe(STAGING, "/api/points");
-console.log(` /api/points -> ${stagingPoints}`);
-console.log(` /api/stats  -> ${await probe(STAGING, "/api/stats")}`);
-if (stagingPoints.startsWith("404")) {
+const stagingUser = await probe(STAGING, "/api/user");
+console.log(` /api/user -> ${stagingUser}`);
+if (stagingUser.startsWith("404")) {
   todos.push("测试环境落后于本地代码：npx wrangler deploy --env staging");
 }
 

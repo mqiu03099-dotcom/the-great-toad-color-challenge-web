@@ -1,4 +1,5 @@
-// 小程序排行榜接口：/api/login /api/score /api/nickname /api/leaderboard
+// 小程序接口：/api/login /api/score /api/nickname /api/leaderboard /api/user
+// /api/points/earn /api/points/spend /api/eagle-eye/use /api/eagle-eye/reward
 const TOKEN_TTL_SECONDS = 7 * 24 * 60 * 60;
 const MAX_NICKNAME_LENGTH = 16;
 // 榜单固定只出前 20 名，服务端写死，客户端不再传 limit
@@ -282,16 +283,6 @@ async function handleUser(request, env) {
   });
 }
 
-async function handlePoints(request, env) {
-  const openid = await readOpenid(request, env);
-
-  if (!openid) {
-    return json({ error: "未登录" }, 401);
-  }
-
-  return json(await readWallet(env, openid));
-}
-
 // 一局结束结算积分，同一个 roundId 只会入账一次
 async function handlePointsEarn(request, env) {
   const openid = await readOpenid(request, env);
@@ -516,23 +507,11 @@ async function handleLeaderboard(request, env) {
   return json({ list, me: await readMyRank(request, env) });
 }
 
-// 首页页脚的用户总数，公开接口，注册过就算一个人
-// 数字由 players 上的触发器维护，读一行就够，不再每次扫全表
-async function handleStats(request, env) {
-  const row = await env.DB.prepare(
-    "SELECT players FROM player_stats WHERE id = 1",
-  ).first();
-
-  return json({ players: row ? row.players : 0 });
-}
-
 const ROUTES = {
   "POST login": handleLogin,
   "POST score": handleScore,
   "POST nickname": handleNickname,
   "GET leaderboard": handleLeaderboard,
-  "GET stats": handleStats,
-  "GET points": handlePoints,
   "GET user": handleUser,
   "POST points/earn": handlePointsEarn,
   "POST points/spend": handlePointsSpend,
