@@ -10,28 +10,6 @@
     "saturationMax": 60,
     "saturationMin": 44
   },
-  "pageAdWindowMinutes": 4,
-  "pageAdSlots": {
-    "home": {
-      "adUnitId": "adunit-62e576fe989ec83c",
-      "maxPerHour": 5
-    },
-    "game": {
-      "adUnitId": "adunit-cd9d7fa9526f0336",
-      "maxPerHour": 2
-    },
-    "result": {
-      "adUnitId": "adunit-e4dfcbf6e5c78e7b",
-      "maxPerHour": 3
-    }
-  },
-  "pageAdUnitIds": {
-    "gameRules": "adunit-b27f5452cb46e2e4",
-    "leaderboard": "adunit-57bfd76899169164",
-    "rewardedVideo": "adunit-b68f49486d37c7d8",
-    "settings": "adunit-061990c98796f24c",
-    "stickerGallery": "adunit-1719c68e1fee52bc"
-  },
   "pageAdUnitIdsV2": {
     "game": "adunit-cd9d7fa9526f0336",
     "gameRules": "adunit-b27f5452cb46e2e4",
