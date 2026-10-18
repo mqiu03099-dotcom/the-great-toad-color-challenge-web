@@ -3,7 +3,7 @@
 > 记录「奶蛙颜色大挑战」的三套环境、上线步骤和当前上线状态。改环境或改发布流程时请同步更新这里。
 > 本文件放在后端仓库 `web/` 里：发布动作都在这个仓库执行，手册跟着代码走，clone 后端就带得上。
 > **本文件和 `web/AGENTS.md` 都要提交进 Git**，否则换机器或清理工作区时会跟着丢。
-> 最后更新：2026-10-14
+> 最后更新：2026-10-18
 
 ## 一、三套环境
 
@@ -164,6 +164,7 @@ node tools/preflight.mjs --db   # 额外只读核对线上/测试库结构（约
 | 2026-10-15 约 21:21 | 线上 | 重新部署，把工作区里另一处未提交编辑（`web/json/sticker-gallery.json`：表情包列表加第四弹，封面 `34.webp` → `35.webp`）也发上线；本轮同时在 web 仓库提交并推送 `1c079f2`（`json/page-ads.json` 瘦身 + `json/sticker-gallery.json` + 本文件记录） | `git push origin main`（`ea4e981..1c079f2`，本地/远端 SHA 一致）；`npx wrangler deploy`（不带 `--env`） | 线上 version `5742055f-e4f4-4fa4-b4fe-c30943fac2b1`（回退点 `7e38d4f2-3bdc-404b-a28f-0ac07579f358`），本次只上传 1 个变更资源 `/json/sticker-gallery.json`；验证：线上 `/json/sticker-gallery.json` 953 字节与仓库逐字节一致、`/json/page-ads.json` 673 字节仍是 `donationUrl` / `gameColorConfig` / `pageAdUnitIdsV2` 三段且与仓库一致；`/api/user` 401、`/api/leaderboard?limit=2` 200、`/` 200，`/DEPLOY.md`、`/AGENTS.md`、`/wrangler.toml`、`/db/schema.sql`、`/tools/preflight.mjs`、`/.dev.vars` 均 404；push 未触发自动构建（`wrangler deployments list` 里两次部署都是本机 21:15 / 21:21 发起的） |
 | 2026-10-18 12:17 | 测试 | 部署 staging（本轮执行） | `node tools/preflight.mjs --db`；`npx wrangler deploy --env staging` | 预检：线上库与测试库六项结构全 `OK`，待办为空；staging version `cccdf225-1aa1-4dea-938a-0e9cf5855f7b`；上传 3 个变更资源 `/js/config.js`、`/json/page-ads.json`、`/json/sticker-gallery.json`；`GET https://milkyfrog-dev.toolsbox.vip/api/user` → 401 `{"error":"未登录"}`，`/api/leaderboard?limit=2` → 200，`/json/page-ads.json` → 200 且含 `gameFailure: adunit-206e4eed07df0a71`；线上 `/api/user` 401、`/api/leaderboard?limit=2` 200；未执行线上 deploy |
 | 2026-10-18 12:39 | 线上 | 发布远程广告配置：`web/json/page-ads.json` 增加 `gameFailure: adunit-206e4eed07df0a71`（失败抽屉广告位） | `node tools/preflight.mjs --db`；`npx wrangler deploy`（不带 `--env`） | 预检：线上/测试库六项结构全 `OK`、待办为空；线上 version `b625a3d0-7ee3-462a-a568-5d6db8227b57`（回退点 `5742055f-e4f4-4fa4-b4fe-c30943fac2b1`）；本次仅上传 1 个变更资源 `/json/page-ads.json`；线上 `/json/page-ads.json` 200 且含 `gameFailure: adunit-206e4eed07df0a71`，与工作区 SHA256 一致；`/api/user` 401、`/api/leaderboard?limit=2` 200、`/` 200、`/json/sticker-gallery.json` 200、`/js/config.js` 200；`/DEPLOY.md`、`/AGENTS.md`、`/wrangler.toml` 均 404 |
+| 2026-10-18 14:26 | 测试 | 部署 staging：颜色找不同/颜色消消乐玩法与移除分数上限（本轮执行） | `npx wrangler deploy --env staging` | staging version `fd754116-ea0a-4bdb-9c40-72956b880fe3`；deployment `8391f190-8966-4c3c-a562-178060b5c95e`（06:26:48Z）；`GET https://milkyfrog-dev.toolsbox.vip/` → 200，`/api/user` → 401 `{"error":"未登录"}`，`/api/leaderboard?limit=2` → 200，`/api/score` GET → 404，`/DEPLOY.md`、`/AGENTS.md`、`/wrangler.toml` → 404；测试库 `milk-frog-staging` 六项结构标记全 `OK`；未执行线上 deploy，线上最新仍为 `b625a3d0`（12:39，仅广告配置） |
 
 ## 十二、隔久了怎么恢复上下文
 

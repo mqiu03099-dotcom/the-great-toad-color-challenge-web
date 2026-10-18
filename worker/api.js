@@ -7,8 +7,6 @@ const LIST_LIMIT = 20;
 // 榜单列表和个人名次必须共用同一套排序，否则同分时名次会和行号不一致
 // shortcut: updated_at 只有秒精度，同秒同分只能按 openid 定序，要更细需提高 handleScore 的时间精度
 const RANK_ORDER = "best_score DESC, updated_at ASC, openid ASC";
-// shortcut: 999 只挡明显离谱的分数，客户端上报本身就可伪造；要真防作弊得让服务端出题发 token
-const MAX_SCORE = 999;
 // 积分：一局得分每 10 分换 1 积分，10 积分兑换 1 次鹰眼
 const EAGLE_EYE_ITEM = "eagleEye";
 // 新注册就送 3 次，和建表默认值保持一致
@@ -156,7 +154,7 @@ async function handleScore(request, env) {
 
   const { score } = await readJsonBody(request);
 
-  if (!Number.isInteger(score) || score < 0 || score > MAX_SCORE) {
+  if (!Number.isInteger(score) || score < 0) {
     return json({ error: "分数不合法" }, 400);
   }
 
@@ -297,7 +295,7 @@ async function handlePointsEarn(request, env) {
     return json({ error: "缺少对局标识" }, 400);
   }
 
-  if (!Number.isInteger(score) || score < 0 || score > MAX_SCORE) {
+  if (!Number.isInteger(score) || score < 0) {
     return json({ error: "分数不合法" }, 400);
   }
 
