@@ -3,7 +3,7 @@
 > 记录「奶蛙颜色大挑战」的三套环境、上线步骤和当前上线状态。改环境或改发布流程时请同步更新这里。
 > 本文件放在后端仓库 `web/` 里：发布动作都在这个仓库执行，手册跟着代码走，clone 后端就带得上。
 > **本文件和 `web/AGENTS.md` 都要提交进 Git**，否则换机器或清理工作区时会跟着丢。
-> 最后更新：2026-10-18
+> 最后更新：2026-10-19
 
 ## 一、三套环境
 
@@ -167,6 +167,8 @@ node tools/preflight.mjs --db   # 额外只读核对线上/测试库结构（约
 | 2026-10-18 14:26 | 测试 | 部署 staging：颜色找不同/颜色消消乐玩法与移除分数上限（本轮执行） | `npx wrangler deploy --env staging` | staging version `fd754116-ea0a-4bdb-9c40-72956b880fe3`；deployment `8391f190-8966-4c3c-a562-178060b5c95e`（06:26:48Z）；`GET https://milkyfrog-dev.toolsbox.vip/` → 200，`/api/user` → 401 `{"error":"未登录"}`，`/api/leaderboard?limit=2` → 200，`/api/score` GET → 404，`/DEPLOY.md`、`/AGENTS.md`、`/wrangler.toml` → 404；测试库 `milk-frog-staging` 六项结构标记全 `OK`；未执行线上 deploy，线上最新仍为 `b625a3d0`（12:39，仅广告配置） |
 | 2026-10-18 14:59 | 线上 | 发布当前最新后端代码：移除服务端分数上限（`MAX_SCORE`） | `node tools/preflight.mjs --db`；`npx wrangler deploy`（不带 `--env`） | 预检：线上/测试库六项结构全 `OK`、待办为空；线上 version `438310f0-ff18-42a3-b5f3-7306142136e1`（回退点 `b625a3d0-7ee3-462a-a568-5d6db8227b57`）；assets 无变更，仅 Worker bundle 13.91 KiB；线上 `/api/user` 401、`/api/leaderboard?limit=2` 200、`/api/score` GET 404、`/` 200、`/json/page-ads.json` 200、`/js/config.js` 200，`/DEPLOY.md`、`/AGENTS.md`、`/wrangler.toml` 均 404；发布前 24h 免费额度实测：Workers 请求 9,872/100,000，D1 写 8,964/100,000 行、读 19,029/5,000,000 行 |
 | 2026-10-18 15:01 | 线上 | 撤销误发布：小程序尚未发版，回滚到发布前版本 | `npx wrangler rollback b625a3d0-7ee3-462a-a568-5d6db8227b57 --name the-great-toad-color-challenge-web --message "撤销误发布：小程序尚未发版" --yes` | 当前线上 version `b625a3d0`（发布前版本）；`/api/user` 401、`/api/leaderboard?limit=2` 200、`/api/score` GET 404、`/` 200、`/json/page-ads.json` 200；本次未改 D1 |
+
+| 2026-10-19 10:11 | 线上 | 发布当前最新后端代码：移除服务端分数上限（`MAX_SCORE`），配合小程序正式版上线 | `node tools/preflight.mjs --db`；`npx wrangler d1 execute milk-frog --remote --json --command "SELECT ..."`（只读复核）；`npx wrangler deploy`（不带 `--env`） | 预检：测试库六项结构全 `OK`；线上库预检那次查询瞬时失败，手动重跑同一只读 SQL 得 `has_points/has_eagle_eye/has_events/has_rank_index/has_player_stats/has_score_buckets` 全为 1，`rows_written: 0`；工作区两仓库均无未提交改动；线上 version `be0f4a4b-6b99-4ce1-a7b0-705f82785c31`（回退点 `b625a3d0-7ee3-462a-a568-5d6db8227b57`），assets 无变更，仅 Worker bundle 13.91 KiB；验证：`/api/user` 401 `{"error":"未登录"}`、`/api/leaderboard?limit=2` 200、`/api/score` GET 404 `{"error":"接口不存在"}`、`/` 200、`/json/page-ads.json` 200 且含 `gameFailure`、`/json/sticker-gallery.json` 200、`/js/config.js` 200，`/DEPLOY.md`、`/AGENTS.md`、`/wrangler.toml` 均 404；本次未改 D1 |
 
 ## 十二、隔久了怎么恢复上下文
 
