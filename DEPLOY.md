@@ -198,7 +198,7 @@ node tools/preflight.mjs --db   # 额外只读核对线上/测试库结构（约
 | `POST /api/login` | `code` 换 token（有效期 7 天） | 不需要 | — | 新用户注册要写 |
 | `POST /api/score` | 上报本局分数、刷新最高分 | 需要 | — | 写 |
 | `POST /api/nickname` | 保存昵称 | 需要 | — | 写 |
-| `GET /api/leaderboard` | 榜单前 20 名 + 自己的名次 | 可选 | 20 + 5 | 不写 |
+| `GET /api/leaderboard` | 榜单前 30 名 + 自己的名次 | 可选 | 30 + 5 | 不写 |
 | `GET /api/user` | **`players` 表全字段 + 总人数**，读玩家资料只走这一个 | 需要 | 2 | 不写 |
 | `POST /api/points/earn` | 结算本局积分 | 需要 | — | 写 |
 | `POST /api/points/spend` | 用积分换鹰眼 | 需要 | — | 写 |

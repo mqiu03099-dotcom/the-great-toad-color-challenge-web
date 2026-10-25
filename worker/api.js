@@ -2,8 +2,8 @@
 // /api/points/earn /api/points/spend /api/eagle-eye/use /api/eagle-eye/reward
 const TOKEN_TTL_SECONDS = 7 * 24 * 60 * 60;
 const MAX_NICKNAME_LENGTH = 16;
-// 榜单固定只出前 20 名，服务端写死，客户端不再传 limit
-const LIST_LIMIT = 20;
+// 榜单固定只出前 30 名，服务端写死，客户端不再传 limit
+const LIST_LIMIT = 30;
 // 榜单列表和个人名次必须共用同一套排序，否则同分时名次会和行号不一致
 // shortcut: updated_at 只有秒精度，同秒同分只能按 openid 定序，要更细需提高 handleScore 的时间精度
 const RANK_ORDER = "best_score DESC, updated_at ASC, openid ASC";
