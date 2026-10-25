@@ -170,6 +170,9 @@ node tools/preflight.mjs --db   # 额外只读核对线上/测试库结构（约
 
 | 2026-10-19 10:11 | 线上 | 发布当前最新后端代码：移除服务端分数上限（`MAX_SCORE`），配合小程序正式版上线 | `node tools/preflight.mjs --db`；`npx wrangler d1 execute milk-frog --remote --json --command "SELECT ..."`（只读复核）；`npx wrangler deploy`（不带 `--env`） | 预检：测试库六项结构全 `OK`；线上库预检那次查询瞬时失败，手动重跑同一只读 SQL 得 `has_points/has_eagle_eye/has_events/has_rank_index/has_player_stats/has_score_buckets` 全为 1，`rows_written: 0`；工作区两仓库均无未提交改动；线上 version `be0f4a4b-6b99-4ce1-a7b0-705f82785c31`（回退点 `b625a3d0-7ee3-462a-a568-5d6db8227b57`），assets 无变更，仅 Worker bundle 13.91 KiB；验证：`/api/user` 401 `{"error":"未登录"}`、`/api/leaderboard?limit=2` 200、`/api/score` GET 404 `{"error":"接口不存在"}`、`/` 200、`/json/page-ads.json` 200 且含 `gameFailure`、`/json/sticker-gallery.json` 200、`/js/config.js` 200，`/DEPLOY.md`、`/AGENTS.md`、`/wrangler.toml` 均 404；本次未改 D1 |
 
+| 2026-10-25 14:55 | 测试 | 部署 staging：排行榜默认展示条数 20→30 | `node tools/preflight.mjs --db`；`npx wrangler deploy --env staging` | 预检：线上/测试库六项结构全 `OK`，仅提示 web/ 有未提交改动；staging version `d2bf1b2c-2cef-4a8e-902e-9716c0ad5858`；`/api/leaderboard` 返回 30 条（末位 rank=30），`/api/user` 401 `{"error":"未登录"}`；未改 D1 |
+| 2026-10-25 14:55 | 线上 | 部署线上：排行榜默认展示条数 20→30 | `node tools/preflight.mjs --db`；`npx wrangler deploy`（不带 `--env`） | 预检：线上/测试库六项结构全 `OK`，仅提示 web/ 有未提交改动；线上 version `41675837-dd34-4a2d-932e-5d4f8033ba76`（回退点 `be0f4a4b-6b99-4ce1-a7b0-705f82785c31`）；assets 无变更，Worker bundle 13.91 KiB；`/api/leaderboard` 返回 30 条（末位 rank=30），`/api/user` 401 `{"error":"未登录"}`，`/` 200；未改 D1 |
+
 ## 十二、隔久了怎么恢复上下文
 
 三步，两分钟：
