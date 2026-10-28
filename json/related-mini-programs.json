@@ -17,8 +17,8 @@
   },
   {
     "appId": "wxbe2c2af9a1d495b2",
-    "image": "/assets/images/milk-frog-leg.png",
-    "name": "奶蛙魔笑",
+    "image": "https://milkyfrog.toolsbox.vip/images/share-cover.png",
+    "name": "附近公厕指引",
     "description": "发现更多趣味内容",
     "path": "pages/index/index",
     "rotation": 0
