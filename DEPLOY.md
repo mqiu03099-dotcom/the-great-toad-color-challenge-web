@@ -176,6 +176,9 @@ node tools/preflight.mjs --db   # 额外只读核对线上/测试库结构（约
 | 2026-10-28 14:23 | 线上 | 部署线上：新增表情包第五弹（`json/sticker-gallery.json`） | `node tools/preflight.mjs --db`；`npx wrangler deploy`（不带 `--env`） | 预检：线上/测试库六项结构全 `OK`；提交 `258f79e` 已推送；线上 version `180ccf0e-2e36-493c-aba0-a88d22b3ce7e`（回退点 `41675837-dd34-4a2d-932e-5d4f8033ba76`）；上传 1 个静态资源 `/json/sticker-gallery.json`，Worker bundle 13.91 KiB；`/json/sticker-gallery.json` 200 且首条为「奶蛙表情包第五弹」、`/api/user` 401、`/api/leaderboard?limit=2` 200；未改 D1 |
 | 2026-10-28 14:24 | 测试 | 部署 staging：新增表情包第五弹（`json/sticker-gallery.json`） | `npx wrangler deploy --env staging` | staging version `cf337bee-b817-4b7a-941a-1e9773188e68`；上传 1 个静态资源 `/json/sticker-gallery.json`；`/json/sticker-gallery.json` 200 且首条为「奶蛙表情包第五弹」、`/api/user` 401、`/api/leaderboard?limit=2` 200；未改 D1 |
 
+| 2026-10-28 18:26 | 线上 | 部署线上：更新推荐小程序卡片与封面图 | `node tools/preflight.mjs --db`；`npx wrangler deploy`（不带 `--env`） | 预检：线上/测试库六项结构全 `OK`、无待办；提交 `08f797a` 已推送；线上 version `79f234cf-d656-4d64-b6e5-264b0e3072a6`（回退点 `180ccf0e-2e36-493c-aba0-a88d22b3ce7e`）；上传 2 个静态资源 `/json/related-mini-programs.json`、`/images/share-cover.png`；`/api/user` 401、`/api/leaderboard?limit=2` 200、`/images/share-cover.png` 200、`/json/related-mini-programs.json` 200；未改 D1 |
+| 2026-10-28 18:26 | 测试 | 部署 staging：更新推荐小程序卡片与封面图 | `npx wrangler deploy --env staging` | staging version `821c9921-e71c-44d7-943e-b7f8ab41e4f9`；上传 2 个静态资源 `/json/related-mini-programs.json`、`/images/share-cover.png`；`/api/user` 401、`/api/leaderboard?limit=2` 200、`/images/share-cover.png` 200、`/json/related-mini-programs.json` 200；未改 D1 |
+
 ## 十二、隔久了怎么恢复上下文
 
 三步，两分钟：
