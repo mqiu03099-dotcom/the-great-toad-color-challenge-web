@@ -179,6 +179,8 @@ node tools/preflight.mjs --db   # 额外只读核对线上/测试库结构（约
 | 2026-10-28 18:26 | 线上 | 部署线上：更新推荐小程序卡片与封面图 | `node tools/preflight.mjs --db`；`npx wrangler deploy`（不带 `--env`） | 预检：线上/测试库六项结构全 `OK`、无待办；提交 `08f797a` 已推送；线上 version `79f234cf-d656-4d64-b6e5-264b0e3072a6`（回退点 `180ccf0e-2e36-493c-aba0-a88d22b3ce7e`）；上传 2 个静态资源 `/json/related-mini-programs.json`、`/images/share-cover.png`；`/api/user` 401、`/api/leaderboard?limit=2` 200、`/images/share-cover.png` 200、`/json/related-mini-programs.json` 200；未改 D1 |
 | 2026-10-28 18:26 | 测试 | 部署 staging：更新推荐小程序卡片与封面图 | `npx wrangler deploy --env staging` | staging version `821c9921-e71c-44d7-943e-b7f8ab41e4f9`；上传 2 个静态资源 `/json/related-mini-programs.json`、`/images/share-cover.png`；`/api/user` 401、`/api/leaderboard?limit=2` 200、`/images/share-cover.png` 200、`/json/related-mini-programs.json` 200；未改 D1 |
 
+| 2026-10-29 14:11 | 线上 | 部署线上：降低 D1 每日写入（积分幂等改用 `players.last_round_id`、最高分同桶不搬桶、删冗余索引 `players_best_score`） | `node tools/preflight.mjs --db`；`npx wrangler d1 execute milk-frog --remote --file=db/migrations/2026-10-29-d1-write-reduction.sql`；`npx wrangler deploy`（不带 `--env`） | 迁移 4 条语句 / 读 50 行 / 写 3 行 / 库 3.29MB；预检线上七项全 `OK`（测试库仅缺 `last_round_id`，未迁移）；线上 version `7b388e0d-4f58-4e85-aa73-9cbe296a2962`，bundle 13.93 KiB；`/api/user` 401、`/api/leaderboard?limit=2` 200、`/` 200、`/api/stats` 404；部署后 2 分钟真实流量 53 个请求全部 200/`ok`、`exception` 0（其中 `/api/points/earn` 7 次、`/api/score` 13 次、`/api/login` 14 次、eagle-eye 1 次）；小程序未改动，旧版与审核中新版共用同一接口契约 |
+
 ## 十二、隔久了怎么恢复上下文
 
 三步，两分钟：
