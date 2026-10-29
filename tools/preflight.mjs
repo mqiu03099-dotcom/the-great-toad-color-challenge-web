@@ -76,7 +76,8 @@ if (withDb) {
       " (SELECT COUNT(*) FROM pragma_table_info('players') WHERE name='eagle_eye') AS has_eagle_eye," +
       " (SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='player_stats') AS has_player_stats," +
       " (SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='score_buckets') AS has_score_buckets," +
-      " (SELECT COUNT(*) FROM sqlite_master WHERE type='index' AND name='players_rank') AS has_rank_index";
+      " (SELECT COUNT(*) FROM sqlite_master WHERE type='index' AND name='players_rank') AS has_rank_index," +
+      " (SELECT COUNT(*) FROM pragma_table_info('players') WHERE name='last_round_id') AS has_last_round";
     const out = execSync(
       `npx wrangler d1 execute ${dbName} --remote --json --command "${sql}"`,
       { cwd: root, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], timeout: 180000 },
@@ -97,6 +98,7 @@ if (withDb) {
       console.log(` [${mark(row.has_rank_index)}] players_rank 索引`);
       console.log(` [${mark(row.has_player_stats)}] player_stats 表`);
       console.log(` [${mark(row.has_score_buckets)}] score_buckets 表`);
+      console.log(` [${mark(row.has_last_round)}] players.last_round_id 列`);
 
       // 缺哪个补哪个，顺序和 DEPLOY.md 第十节一致
       const missing = [];
@@ -108,6 +110,9 @@ if (withDb) {
       }
       if (!row.has_player_stats || !row.has_score_buckets) {
         missing.push("2026-10-14-player-stats-buckets.sql");
+      }
+      if (!row.has_last_round) {
+        missing.push("2026-10-29-d1-write-reduction.sql");
       }
       if (missing.length) {
         todos.push(

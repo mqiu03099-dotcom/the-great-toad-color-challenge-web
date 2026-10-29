@@ -5,10 +5,10 @@ CREATE TABLE IF NOT EXISTS players (
   points REAL NOT NULL DEFAULT 0,
   -- 新注册就送 3 次鹰眼，和 worker 里的 EAGLE_EYE_INITIAL_COUNT 保持一致
   eagle_eye INTEGER NOT NULL DEFAULT 3,
-  updated_at INTEGER NOT NULL
+  updated_at INTEGER NOT NULL,
+  -- 最近一次结算的对局 ID，积分入账按它去重，避免为幂等再写一行事件
+  last_round_id TEXT
 );
-
-CREATE INDEX IF NOT EXISTS players_best_score ON players (best_score DESC);
 
 CREATE INDEX IF NOT EXISTS players_rank ON players (best_score DESC, updated_at ASC, openid ASC);
 
@@ -50,6 +50,7 @@ END;
 
 CREATE TRIGGER IF NOT EXISTS score_buckets_update AFTER UPDATE OF best_score ON players
 WHEN old.best_score <> new.best_score AND new.best_score > 0
+ AND old.best_score / 10 <> new.best_score / 10
 BEGIN
   UPDATE score_buckets SET cnt = cnt - 1
    WHERE bucket = old.best_score / 10 AND old.best_score > 0;

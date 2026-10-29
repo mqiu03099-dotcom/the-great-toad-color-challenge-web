@@ -125,8 +125,8 @@ node tools/preflight.mjs --db   # 额外只读核对线上/测试库结构（约
 
 - [ ] 1. 确认工作区：仓库根目录和 `web/` 各跑一次 `git status --short`，确认要上线的改动都已提交
 - [ ] 2. 自检：`cd web; node tools/preflight.mjs --db`，先看「待办」一节
-- [ ] 3. 线上库迁移（**三条都要，顺序不能反**）：`npx wrangler d1 execute milk-frog --remote --file=db/migrations/2026-10-13-player-points-eagle-eye.sql`，再 `npx wrangler d1 execute milk-frog --remote --file=db/migrations/2026-10-14-players-rank-index.sql`，最后 `npx wrangler d1 execute milk-frog --remote --file=db/migrations/2026-10-14-player-stats-buckets.sql`
-- [ ] 4. 核对线上库结构：再跑 `node tools/preflight.mjs --db`，线上六个标记（`points` / `eagle_eye` / `player_events` / `players_rank` / `player_stats` / `score_buckets`）必须都是 `OK`
+- [ ] 3. 线上库迁移（**四条都要，顺序不能反**）：`npx wrangler d1 execute milk-frog --remote --file=db/migrations/2026-10-13-player-points-eagle-eye.sql`，再 `npx wrangler d1 execute milk-frog --remote --file=db/migrations/2026-10-14-players-rank-index.sql`，再 `npx wrangler d1 execute milk-frog --remote --file=db/migrations/2026-10-14-player-stats-buckets.sql`，最后 `npx wrangler d1 execute milk-frog --remote --file=db/migrations/2026-10-29-d1-write-reduction.sql`
+- [ ] 4. 核对线上库结构：再跑 `node tools/preflight.mjs --db`，线上七个标记（`points` / `eagle_eye` / `player_events` / `players_rank` / `player_stats` / `score_buckets` / `last_round_id`）必须都是 `OK`
 - [ ] 5. 发 Worker：`npx wrangler deploy`（**不带 `--env`**；带 `--env staging` 发的是测试环境，别搞反）
 - [ ] 6. 验证接口：`curl.exe -s https://milkyfrog.toolsbox.vip/api/user` 应返回 401 `{"error":"未登录"}`；返回 404 说明还是旧代码
 - [ ] 7. 线上真机过一遍：积分累计、鹰眼兑换、个人信息卡片、结果页最佳纪录
@@ -135,7 +135,7 @@ node tools/preflight.mjs --db   # 额外只读核对线上/测试库结构（约
 
 顺序不能反：第 3 步没做就做第 5 步，新接口会 500；反过来先 deploy 后迁移，只有新接口不可用，补跑迁移即可恢复，老功能不受影响。
 
-重复执行：`2026-10-14` 的两条都是 `IF NOT EXISTS` + 末尾按 `players` 重算，可以放心重跑；手动删过 `players` 里的行之后，也用 `2026-10-14-player-stats-buckets.sql` 把汇总表修回真实值（目前没有 `DELETE` 触发器，删行不会自动减）。`2026-10-13` 那条不是可重复执行的（列已存在时 `ALTER` 会报错，脚本会不会继续往下跑未实测），跑之前先看第 2 步的 `players.points` 标记，已经是 `OK` 就别再跑。
+重复执行：`2026-10-14` 的两条都是 `IF NOT EXISTS` + 末尾按 `players` 重算，可以放心重跑；手动删过 `players` 里的行之后，也用 `2026-10-14-player-stats-buckets.sql` 把汇总表修回真实值（目前没有 `DELETE` 触发器，删行不会自动减）。`2026-10-13` 那条不是可重复执行的（列已存在时 `ALTER` 会报错，脚本会不会继续往下跑未实测），跑之前先看第 2 步的 `players.points` 标记，已经是 `OK` 就别再跑。`2026-10-29-d1-write-reduction.sql` 同样只能跑一次（`ALTER TABLE ADD COLUMN`），它删掉冗余索引 `players_best_score`、给 `score_buckets_update` 加同桶跳过，属一次性结构变更，不能当作「重算脚本」用。
 
 ## 十一、上线记录（每次上线追加一行，不要删旧行）
 
@@ -238,15 +238,16 @@ node tools/preflight.mjs --db   # 额外只读核对线上/测试库结构（约
 - 客户端只有 `utils/player.js` 的 `requestUser()` 调它，`pages/index`、`pages/game`、`pages/result`、`pages/settings`、`components/eagle-eye-drawer` 都从这里取资料；**读接口只剩「个人资料」和「榜单」两个，其余全是写**
 - 2026-10-15 删掉了 `GET /api/stats`、`GET /api/points`（新版本小程序都不再调用）：老包再调这两个路径会拿到 404 `{"error":"接口不存在"}`，客户端是静默忽略，不会报错，只是那两处数字不再刷新
 
-### 上线顺序（三条迁移不能反）
+### 上线顺序（四条迁移不能反）
 
 1. `cd web; node tools/preflight.mjs --db`（只读，看「待办」）
 2. `npx wrangler d1 execute milk-frog --remote --file=db/migrations/2026-10-13-player-points-eagle-eye.sql`
 3. `npx wrangler d1 execute milk-frog --remote --file=db/migrations/2026-10-14-players-rank-index.sql`
 4. `npx wrangler d1 execute milk-frog --remote --file=db/migrations/2026-10-14-player-stats-buckets.sql`
-5. `npx wrangler deploy`（不带 `--env`）
-6. 验接口：`curl.exe -s https://milkyfrog.toolsbox.vip/api/user` → 401，`.../api/leaderboard?limit=2` → 200，`.../api/stats` → 404
-7. 小程序上传 → 提交审核 → 审核通过后发布
+5. `npx wrangler d1 execute milk-frog --remote --file=db/migrations/2026-10-29-d1-write-reduction.sql`
+6. `npx wrangler deploy`（不带 `--env`）
+7. 验接口：`curl.exe -s https://milkyfrog.toolsbox.vip/api/user` → 401，`.../api/leaderboard?limit=2` → 200，`.../api/stats` → 404
+8. 小程序上传 → 提交审核 → 审核通过后发布
 
-第 2～4 步必须早于第 5 步：新 Worker 的 `/api/user` 和带登录态的 `/api/leaderboard` 要读 `player_stats`、`score_buckets`，表不在就是 500。
+第 2～5 步必须早于第 6 步：新 Worker 的 `/api/user` 和带登录态的 `/api/leaderboard` 要读 `player_stats`、`score_buckets`，表不在就是 500；`/api/points/earn` 要写 `players.last_round_id`，列不在同样 500。
 详细清单和重复执行注意事项见第十节。

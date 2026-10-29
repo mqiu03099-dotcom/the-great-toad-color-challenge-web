@@ -301,18 +301,16 @@ async function handlePointsEarn(request, env) {
 
   const gained = score / POINTS_PER_SCORE_DIVISOR;
 
-  if (
-    !(await recordPlayerEvent(env, `earn:${roundId}`, openid, "points", gained))
-  ) {
-    return json({ ...(await readWallet(env, openid)), gained });
-  }
-
   // 不动 updated_at，它代表最高分达成时刻，改了会打乱同分排名
+  // 幂等改存 players.last_round_id：同一局重试时 WHERE 不成立，只花一次写入
   await env.DB.prepare(
-    `INSERT INTO players (openid, points, updated_at) VALUES (?, ?, ?)
-     ON CONFLICT(openid) DO UPDATE SET points = ROUND(players.points + excluded.points, 1)`,
+    `INSERT INTO players (openid, points, last_round_id, updated_at) VALUES (?, ?, ?, ?)
+     ON CONFLICT(openid) DO UPDATE SET
+       points = ROUND(players.points + excluded.points, 1),
+       last_round_id = excluded.last_round_id
+     WHERE players.last_round_id IS NULL OR players.last_round_id <> excluded.last_round_id`,
   )
-    .bind(openid, gained, Math.floor(Date.now() / 1000))
+    .bind(openid, gained, roundId, Math.floor(Date.now() / 1000))
     .run();
 
   return json({ ...(await readWallet(env, openid)), gained });
