@@ -1,0 +1,13 @@
+{
+  "puzzle": false,
+  "game2048": true,
+  "link": true,
+  "colorMemory": false,
+  "findDifference": true,
+  "colorCount": false,
+  "colorTrick": false,
+  "eagleEye": true,
+  "moreGames": true,
+  "leaderboard": true,
+  "settings": true
+}
