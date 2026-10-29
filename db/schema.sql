@@ -50,7 +50,7 @@ END;
 
 CREATE TRIGGER IF NOT EXISTS score_buckets_update AFTER UPDATE OF best_score ON players
 WHEN old.best_score <> new.best_score AND new.best_score > 0
- AND old.best_score / 10 <> new.best_score / 10
+ AND (old.best_score = 0 OR old.best_score / 10 <> new.best_score / 10)
 BEGIN
   UPDATE score_buckets SET cnt = cnt - 1
    WHERE bucket = old.best_score / 10 AND old.best_score > 0;

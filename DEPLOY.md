@@ -126,6 +126,7 @@ node tools/preflight.mjs --db   # 额外只读核对线上/测试库结构（约
 - [ ] 1. 确认工作区：仓库根目录和 `web/` 各跑一次 `git status --short`，确认要上线的改动都已提交
 - [ ] 2. 自检：`cd web; node tools/preflight.mjs --db`，先看「待办」一节
 - [ ] 3. 线上库迁移（**四条都要，顺序不能反**）：`npx wrangler d1 execute milk-frog --remote --file=db/migrations/2026-10-13-player-points-eagle-eye.sql`，再 `npx wrangler d1 execute milk-frog --remote --file=db/migrations/2026-10-14-players-rank-index.sql`，再 `npx wrangler d1 execute milk-frog --remote --file=db/migrations/2026-10-14-player-stats-buckets.sql`，最后 `npx wrangler d1 execute milk-frog --remote --file=db/migrations/2026-10-29-d1-write-reduction.sql`
+- [ ] 3.1 若该库已执行过 `2026-10-29-d1-write-reduction.sql`，补一次 `npx wrangler d1 execute milk-frog --remote --file=db/migrations/2026-10-29-fix-bucket-guard.sql`（可重复执行，末尾按 `players` 重算 `score_buckets`）
 - [ ] 4. 核对线上库结构：再跑 `node tools/preflight.mjs --db`，线上七个标记（`points` / `eagle_eye` / `player_events` / `players_rank` / `player_stats` / `score_buckets` / `last_round_id`）必须都是 `OK`
 - [ ] 5. 发 Worker：`npx wrangler deploy`（**不带 `--env`**；带 `--env staging` 发的是测试环境，别搞反）
 - [ ] 6. 验证接口：`curl.exe -s https://milkyfrog.toolsbox.vip/api/user` 应返回 401 `{"error":"未登录"}`；返回 404 说明还是旧代码
@@ -181,6 +182,8 @@ node tools/preflight.mjs --db   # 额外只读核对线上/测试库结构（约
 
 | 2026-10-29 14:11 | 线上 | 部署线上：降低 D1 每日写入（积分幂等改用 `players.last_round_id`、最高分同桶不搬桶、删冗余索引 `players_best_score`） | `node tools/preflight.mjs --db`；`npx wrangler d1 execute milk-frog --remote --file=db/migrations/2026-10-29-d1-write-reduction.sql`；`npx wrangler deploy`（不带 `--env`） | 迁移 4 条语句 / 读 50 行 / 写 3 行 / 库 3.29MB；预检线上七项全 `OK`（测试库仅缺 `last_round_id`，未迁移）；线上 version `7b388e0d-4f58-4e85-aa73-9cbe296a2962`，bundle 13.93 KiB；`/api/user` 401、`/api/leaderboard?limit=2` 200、`/` 200、`/api/stats` 404；部署后 2 分钟真实流量 53 个请求全部 200/`ok`、`exception` 0（其中 `/api/points/earn` 7 次、`/api/score` 13 次、`/api/login` 14 次、eagle-eye 1 次）；小程序未改动，旧版与审核中新版共用同一接口契约 |
 | 2026-10-29 14:15 | 测试 | 部署 staging：同步 D1 写入优化（迁移 + Worker） | `npx wrangler d1 execute milk-frog-staging --remote --file=db/migrations/2026-10-29-d1-write-reduction.sql`；`npx wrangler deploy --env staging` | 迁移 4 条语句 / 读 50 行 / 写 3 行 / 库 52KB；预检线上与测试库七项全 `OK`、待办为空；staging version `bb0b69a9-bc08-45a4-af5a-a26c45b71f85`；`https://milkyfrog-dev.toolsbox.vip/api/user` 401、`/api/leaderboard?limit=2` 200（30 条）、`/` 200；结构复核 old_idx=0 / guard_ok=1 / has_col=1 |
+| 2026-10-29 14:16 | 测试 | 修复 2026-10-29 优化引入的桶计数缺陷：`score_buckets_update` 守卫把首次得分 1-9 当成同桶跳过（`old=0` 与 `new=1..9` 的 `best_score/10` 都是 0），并按 `players` 全量重算 `score_buckets` | `npx wrangler d1 execute milk-frog-staging --remote --env staging --file=db/migrations/2026-10-29-fix-bucket-guard.sql` | 4 条语句 / 读 101 行 / 写 14 行；修复后 `bucket_sum=truth_ranked=42`；staging `/api/leaderboard` 200；本地 SQLite 实测 0→5 记入 bucket 0=1、5→15 换桶、15→17 不动、17→25 换桶；本次未 deploy（Worker 代码未变） |
+| 2026-10-29 14:19 | 线上 | 修复同一桶计数缺陷并重算 `score_buckets`（不动 Worker） | `npx wrangler d1 execute milk-frog --remote --file=db/migrations/2026-10-29-fix-bucket-guard.sql` | 修复前线上 `bucket_sum=7767`、`truth_ranked=7779`（差 12，且每有一个新玩家首次得 1-9 分就继续扩大）；修复后 `bucket_sum=truth_ranked=7780`、`bad_buckets=0`、`player_stats=players=13095`；4 条语句 / 读 15,731 行 / 写 326 行；远程 `sqlite_master` 已含 `AND (old.best_score = 0 OR ...)`；线上 `/` 200、`/api/leaderboard` 200、`/api/user` 401；约 60 秒真实流量 `outcome=ok`、`exceptions=[]`；未 deploy |
 
 ## 十二、隔久了怎么恢复上下文
 
