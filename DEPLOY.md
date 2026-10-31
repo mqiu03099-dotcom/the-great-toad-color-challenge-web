@@ -192,6 +192,7 @@ node tools/preflight.mjs --db   # 额外只读核对线上/测试库结构（约
 | 2026-10-30 13:56 | 线上 | 同步首页入口远程开关：只显示「颜色找不同」，其余 10 个入口关闭（只改静态 JSON，未改 D1） | `npx wrangler deploy`（不带 `--env`） | 上传 1 个静态资源 `/json/home-buttons.json`；线上 version `3362c8a8-c476-46b1-9bb2-696b5fbec5bb`；JSON 200、244 字节，唯一启用项为 `findDifference`；`/` 200、`/api/user` 401、`/api/leaderboard?limit=2` 200；未改 D1 |
 | 2026-10-31 18:29 | 测试 | 首页入口远程开关全部开启，11 个按钮均为 `true`（只改静态 JSON，未改 D1） | `node tools/preflight.mjs --db`；`npx wrangler deploy --env staging` | 预检线上/测试库七项结构全 `OK`，唯一待办为 `json/home-buttons.json` 未提交；上传 1 个静态资源 `/json/home-buttons.json`；staging version `c187a16b-9414-4417-81a2-bd18c00c67b3`；JSON 200，11 项全 `true`；`/` 200、`/api/user` 401、`/api/leaderboard?limit=2` 200；未改 D1 |
 | 2026-10-31 18:30 | 线上 | 同步首页入口远程开关全部开启，11 个按钮均为 `true`（只改静态 JSON，未改 D1） | `npx wrangler deploy`（不带 `--env`） | 上传 1 个静态资源 `/json/home-buttons.json`；线上 version `3444141f-5a05-4e8d-a102-8c71a41fee09`；JSON 200，11 项全 `true`；`/` 200、`/api/user` 401、`/api/leaderboard?limit=2` 200、`/api/stats` 404；未改 D1 |
+| 2026-10-31 21:17 | 测试 | 回退排行榜 3 分钟缓存（撤销 20:57 的 staging `8cb79046-c5b2-4b6e-a06d-676481774230`），`worker/api.js` 恢复 `HEAD` 后重新部署 staging | `node --check worker/api.js`；`node tools/preflight.mjs --db`；`npx wrangler deploy --env staging` | `worker/api.js` 与 `HEAD` 无差异；bundle 13.93 KiB；staging version `0c9f17c1-c14f-4496-9ff1-c96af5b4db56`；`/api/leaderboard` 200 且 30 条（首名 1724，末名 11）、`/api/user` 401、`/` 200、`/json/home-buttons.json` 200；线上仍为 18:30 版 `3444141f-5a05-4e8d-a102-8c71a41fee09`，未部署线上、未改 D1 |
 
 ## 十二、隔久了怎么恢复上下文
 
