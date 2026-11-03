@@ -194,6 +194,8 @@ node tools/preflight.mjs --db   # 额外只读核对线上/测试库结构（约
 | 2026-10-31 18:30 | 线上 | 同步首页入口远程开关全部开启，11 个按钮均为 `true`（只改静态 JSON，未改 D1） | `npx wrangler deploy`（不带 `--env`） | 上传 1 个静态资源 `/json/home-buttons.json`；线上 version `3444141f-5a05-4e8d-a102-8c71a41fee09`；JSON 200，11 项全 `true`；`/` 200、`/api/user` 401、`/api/leaderboard?limit=2` 200、`/api/stats` 404；未改 D1 |
 | 2026-10-31 21:17 | 测试 | 回退排行榜 3 分钟缓存（撤销 20:57 的 staging `8cb79046-c5b2-4b6e-a06d-676481774230`），`worker/api.js` 恢复 `HEAD` 后重新部署 staging | `node --check worker/api.js`；`node tools/preflight.mjs --db`；`npx wrangler deploy --env staging` | `worker/api.js` 与 `HEAD` 无差异；bundle 13.93 KiB；staging version `0c9f17c1-c14f-4496-9ff1-c96af5b4db56`；`/api/leaderboard` 200 且 30 条（首名 1724，末名 11）、`/api/user` 401、`/` 200、`/json/home-buttons.json` 200；线上仍为 18:30 版 `3444141f-5a05-4e8d-a102-8c71a41fee09`，未部署线上、未改 D1 |
 
+| 2026-11-03 18:35 | 测试 | 回退误部署的贪吃蛙榜单后端：本地 `worker/api.js`、`db/schema.sql` 与迁移先恢复 `HEAD`，重发干净 staging 并删除测试库 `snake_players`、`snake_score_stats` | `node tools/preflight.mjs --db`；`npx wrangler deploy --env staging`；`npx wrangler d1 execute milk-frog-staging --remote --command "DROP TABLE IF EXISTS snake_players; DROP TABLE IF EXISTS snake_score_stats;"` | 预检线上/测试库七项结构全 `OK`、待办为空；staging version `583a3764-b8a3-427f-9f39-9e072c3bb70b`；清理前复核 `snake_players=0`、`snake_score_stats=1`，清理后 `snake%` 表查询结果为空；`/api/user` 401、`/api/leaderboard?limit=2` 200、`/api/snake/leaderboard` 404、`/api/stats` 404；线上未部署、未改 D1 |
+
 ## 十二、隔久了怎么恢复上下文
 
 三步，两分钟：
